@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistem Inventarisasi Aset LMAN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style untuk input OTP agar lebih baik */
+        .otp-input {
+            width: 3rem;
+            height: 3.5rem;
+            text-align: center;
+            font-size: 1.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid #D1D5DB;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .otp-input:focus {
+            border-color: #2563EB;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+            outline: none;
+        }
+        /* Animasi sederhana untuk card */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="w-full max-w-md mx-auto p-4">
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="inline-block bg-gray-200 p-3 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Sistem Inventarisasi Aset</h1>
+                <p class="text-gray-500">Lembaga Manajemen Aset Negara</p>
+            </div>
+
+            <!-- Form Container -->
+            <div id="form-container">
+                
+                <!-- Tahap 1: Input Email/WA -->
+                <form id="request-otp-form" class="space-y-6 fade-in">
+                    <div>
+                        <label for="identifier" class="text-sm font-medium text-gray-700">Email atau Nomor WhatsApp</label>
+                        <input type="text" id="identifier" name="identifier" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500" placeholder="contoh@email.com / 08123456789" required>
+                    </div>
+                    <div>
+                        <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            Kirim Kode OTP
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Tahap 2: Input OTP (Hidden by default) -->
+                <form id="verify-otp-form" class="hidden space-y-6 fade-in">
+                    <div class="text-center">
+                        <p class="font-medium text-gray-800">Masukkan Kode Verifikasi</p>
+                        <p class="text-sm text-gray-500 mt-1">Kode telah dikirim ke <strong id="user-identifier-display" class="text-gray-900"></strong></p>
+                    </div>
+                    
+                    <div id="otp-container" class="flex justify-center space-x-2">
+                        <input type="text" maxlength="1" class="otp-input" data-index="0">
+                        <input type="text" maxlength="1" class="otp-input" data-index="1">
+                        <input type="text" maxlength="1" class="otp-input" data-index="2">
+                        <input type="text" maxlength="1" class="otp-input" data-index="3">
+                        <input type="text" maxlength="1" class="otp-input" data-index="4">
+                        <input type="text" maxlength="1" class="otp-input" data-index="5">
+                    </div>
+                     <p id="otp-error" class="text-red-500 text-sm text-center hidden">Kode OTP tidak valid.</p>
+
+                    <div>
+                        <button type="submit" id="verify-btn" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                            Verifikasi & Login
+                        </button>
+                    </div>
+                    
+                    <div class="text-center text-sm">
+                        <p class="text-gray-500">
+                            Tidak menerima kode? 
+                            <a href="#" id="resend-otp-link" class="font-medium text-blue-600 hover:text-blue-500">Kirim ulang</a>
+                            <span id="resend-timer" class="text-gray-500"></span>
+                        </p>
+                    </div>
+                </form>
+
+            </div>
+             <!-- Success Message -->
+            <div id="success-message" class="hidden text-center fade-in p-4 bg-green-100 text-green-800 rounded-lg">
+                <h3 class="font-bold text-lg">Login Berhasil!</h3>
+                <p>Anda akan diarahkan ke dashboard...</p>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-gray-500 mt-6">
+            &copy; 2024 Lembaga Manajemen Aset Negara. Hak Cipta Dilindungi.
+        </p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const requestOtpForm = document.getElementById('request-otp-form');
+            const verifyOtpForm = document.getElementById('verify-otp-form');
+            const otpContainer = document.getElementById('otp-container');
+            const otpInputs = otpContainer.querySelectorAll('.otp-input');
+            const identifierInput = document.getElementById('identifier');
+            const userIdentifierDisplay = document.getElementById('user-identifier-display');
+            const resendLink = document.getElementById('resend-otp-link');
+            const resendTimerDisplay = document.getElementById('resend-timer');
+            const otpError = document.getElementById('otp-error');
+            const successMessage = document.getElementById('success-message');
+            
+            let simulatedOtp = '';
+            let countdown;
+            let timerValue = 30; // 30 detik
+
+            // Fungsi untuk simulasi pengiriman OTP
+            function sendOtp() {
+                // Dalam aplikasi nyata, ini akan menjadi panggilan API
+                simulatedOtp = String(Math.floor(100000 + Math.random() * 900000));
+                console.log(`[SIMULASI] Kode OTP dikirim ke ${identifierInput.value}: ${simulatedOtp}`);
+                alert(`[SIMULASI] Kode OTP Anda adalah: ${simulatedOtp}\n(Lihat juga di console log)`);
+
+                userIdentifierDisplay.textContent = identifierInput.value;
+                requestOtpForm.classList.add('hidden');
+                verifyOtpForm.classList.remove('hidden');
+                otpInputs[0].focus();
+                startResendTimer();
+            }
+
+            // Fungsi untuk memulai timer kirim ulang
+            function startResendTimer() {
+                clearInterval(countdown);
+                resendLink.classList.add('hidden');
+                resendTimerDisplay.classList.remove('hidden');
+                timerValue = 30;
+                resendTimerDisplay.textContent = `(tunggu ${timerValue}d)`;
+
+                countdown = setInterval(() => {
+                    timerValue--;
+                    resendTimerDisplay.textContent = `(tunggu ${timerValue}d)`;
+                    if (timerValue <= 0) {
+                        clearInterval(countdown);
+                        resendTimerDisplay.classList.add('hidden');
+                        resendLink.classList.remove('hidden');
+                    }
+                }, 1000);
+            }
+
+            // Event listener untuk form pertama (meminta OTP)
+            requestOtpForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (identifierInput.value.trim() === '') {
+                    alert('Mohon masukkan email atau nomor WhatsApp.');
+                    return;
+                }
+                sendOtp();
+            });
+            
+            // Event listener untuk kirim ulang OTP
+            resendLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                sendOtp();
+            });
+
+            // Logika untuk input OTP
+            otpContainer.addEventListener('input', (e) => {
+                const target = e.target;
+                const value = target.value;
+                const index = parseInt(target.dataset.index);
+                otpError.classList.add('hidden');
+
+                if (value && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            });
+
+            otpContainer.addEventListener('keydown', (e) => {
+                const target = e.target;
+                const index = parseInt(target.dataset.index);
+
+                if (e.key === 'Backspace' && !target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+            
+            otpContainer.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').trim();
+                if (pastedData.length === otpInputs.length && /^\d+$/.test(pastedData)) {
+                    otpInputs.forEach((input, index) => {
+                        input.value = pastedData[index];
+                    });
+                    otpInputs[otpInputs.length - 1].focus();
+                }
+            });
+
+
+            // Event listener untuk form kedua (verifikasi OTP)
+            verifyOtpForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                let enteredOtp = '';
+                otpInputs.forEach(input => {
+                    enteredOtp += input.value;
+                });
+
+                if (enteredOtp === simulatedOtp) {
+                    // Berhasil
+                    otpError.classList.add('hidden');
+                    verifyOtpForm.classList.add('hidden');
+                    successMessage.classList.remove('hidden');
+                    // Di aplikasi nyata, akan ada proses redirect atau manajemen sesi
+                    console.log('Login berhasil!');
+                } else {
+                    // Gagal
+                    otpError.classList.remove('hidden');
+                    // Shake animation for error
+                    otpContainer.classList.add('animate-shake');
+                    setTimeout(() => otpContainer.classList.remove('animate-shake'), 500);
+
+                }
+            });
+        });
+    </script>
+    <style>
+        @keyframes shake {
+            10%, 90% { transform: translateX(-1px); }
+            20%, 80% { transform: translateX(2px); }
+            30%, 50%, 70% { transform: translateX(-4px); }
+            40%, 60% { transform: translateX(4px); }
+        }
+        .animate-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+    </style>
+</body>
+</html>
