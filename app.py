@@ -21,7 +21,7 @@ st.markdown(
 # --- MEMUAT DAN MENAMPILKAN HTML ---
 try:
     # Pastikan nama file 'sistem_v0.2.html' sudah benar.
-    with open('sistem_v0.2.html', 'r', encoding='utf-8') as f:
+    with open('sistem.html', 'r', encoding='utf-8') as f:
         html_content = f.read()
 
     # Menampilkan konten HTML.
