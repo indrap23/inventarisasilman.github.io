@@ -9,12 +9,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* Perbaikan: Memastikan elemen dasar mengisi seluruh viewport */
         html, body {
             height: 100%;
             width: 100%;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
+        }
+        #app-wrapper {
+            position: relative;
+            height: 100%;
+            width: 100%;
         }
         #app-container {
             height: 100%;
@@ -49,11 +54,35 @@
 </head>
 <body class="bg-gray-100">
 
-    <div id="app-container">
-        <!-- Konten Aplikasi akan dirender oleh JavaScript di sini -->
+    <div id="app-wrapper">
+        <!-- Tombol Fullscreen ditambahkan di sini -->
+        <button id="fullscreen-btn" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;" class="bg-gray-800 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 0h-4m4 0l-5 5" />
+            </svg>
+        </button>
+
+        <div id="app-container">
+            <!-- Konten Aplikasi akan dirender oleh JavaScript di sini -->
+        </div>
     </div>
 
     <script>
+    // --- FUNGSI FULLSCREEN ---
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const appWrapper = document.getElementById('app-wrapper');
+
+    fullscreenBtn.addEventListener('click', () => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+        } else {
+            // Meminta fullscreen untuk elemen pembungkus, bukan seluruh dokumen
+            appWrapper.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+            });
+        }
+    });
+
     const App = {
         // --- DATABASE PENGGUNA (SIMULASI) ---
         users: {
@@ -178,7 +207,6 @@
         // --- TEMPLATE UNTUK SETIAP HALAMAN/PERAN ---
         templates: {
             login(state) {
-                // Perubahan: Menghapus max-w-md dari container utama agar bisa melebar
                 return `
                 <div class="page flex items-center justify-center min-h-screen">
                     <div class="w-full p-4">
@@ -207,7 +235,6 @@
             },
             
             admin(state) {
-                // Halaman admin sudah full-width, tidak perlu diubah.
                 return `
                 <div class="page flex h-screen bg-gray-100">
                     <aside class="w-64 flex-shrink-0 bg-gray-800 text-gray-300 flex flex-col">
@@ -737,4 +764,4 @@
     document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
-</ht
+</html>
