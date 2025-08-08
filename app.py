@@ -22,4 +22,4 @@ except FileNotFoundError:
     st.error("File 'sistem.html' tidak ditemukan. Pastikan file tersebut berada di direktori yang sama dengan skrip Streamlit Anda.")
 
 # Informasi tambahan di bagian bawah
-st.info("© 2024 LMAN. Hak Cipta Dilindungi. Aplikasi ini dijalankan di dalam container Streamlit.")
+st.info("© 2024 By DOTI LMAN with 𖹭 𖹭 𖹭. Aplikasi ini dijalankan di dalam container Streamlit.")
