@@ -16,7 +16,7 @@ try:
     # Menampilkan konten HTML di dalam Streamlit
     # Mengatur tinggi ke 1200px untuk memberikan ruang yang cukup bagi aplikasi.
     # Scrolling='auto' (default) akan menampilkan scrollbar jika konten melebihi tinggi.
-    components.html(html_content, height=1200)
+    #components.html(html_content, height=1200)
 
 except FileNotFoundError:
     st.error("File 'sistem.html' tidak ditemukan. Pastikan file tersebut berada di direktori yang sama dengan skrip Streamlit Anda.")
