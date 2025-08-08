@@ -13,7 +13,7 @@
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        .page, .page-content, .screen {
+        .screen, .page, .page-content {
             animation: fadeIn 0.4s ease-in-out;
         }
         @keyframes fadeIn {
@@ -47,23 +47,49 @@
         // --- DATABASE PENGGUNA (SIMULASI) ---
         users: {
             'admin@lman.go.id': { role: 'admin', name: 'Admin LMAN' },
-            'petugas@lman.go.id': { role: 'petugas', name: 'Budi Santoso' },
-            'verifikator@lman.go.id': { role: 'verifikator', name: 'Citra Lestari' }
+            'user@lman.go.id': { role: 'user', name: 'Budi Santoso', assigned_roles: ['petugas', 'verifikator'] },
+            'ani@lman.go.id': { role: 'user', name: 'Ani Wijaya', assigned_roles: ['petugas'] },
+            'citra@lman.go.id': { role: 'user', name: 'Citra Lestari', assigned_roles: ['verifikator'] },
+            'dodi@lman.go.id': { role: 'user', name: 'Dodi Firmansyah', assigned_roles: ['petugas'] }
         },
 
         // --- STATE APLIKASI ---
         state: {
             currentPage: 'login',
             currentUser: null,
+            activeUserRole: null, // Untuk menyimpan peran yang dipilih user
             loginIdentifier: '',
             petugas: {
-                activeBatch: 'Inv. Limbah - Agustus 2025',
+                kertasKerja: [
+                    { 
+                        id: 'KK-001', 
+                        batch: 'Inv. Limbah - Agustus 2025', 
+                        totalAset: 150, 
+                        progres: 2, 
+                        status: 'Berlangsung',
+                        assets: [
+                            { id: 'LBH-0451', desc: 'BEAM - 250 MM X 125 MM', location: 'Area Limbah', status: 'Selesai' },
+                            { id: 'LBH-0452', desc: 'PIPA - BESI 6 INCH', location: 'Area Limbah', status: 'Selesai' },
+                            { id: 'LBH-0453', desc: 'DRUM - BEKAS OLI', location: 'Area Limbah', status: 'Belum Diperiksa' },
+                        ]
+                    },
+                    { 
+                        id: 'KK-002', 
+                        batch: 'Inv. Gudang A - Juli 2025', 
+                        totalAset: 1, 
+                        progres: 0, 
+                        status: 'Perlu Penelitian Ulang', 
+                        catatan: 'Foto tidak jelas.',
+                        assets: [
+                            { id: 'VLV-1001', desc: 'VALVE BUTTERFLY, 16IN', location: 'Gudang A', status: 'Perlu Diperiksa Ulang' }
+                        ]
+                    }
+                ],
+                currentKertasKerjaId: null,
                 currentAsset: null,
-                scannedTag: null,
             },
             verifikator: {
                 currentItem: null,
-                // Updated data based on verifikator.html for a richer experience
                 verificationList: [
                     { 
                         id: 'LMAN-VLV-1001', 
@@ -71,381 +97,625 @@
                         desc: 'VALVE BUTTERFLY, 16IN, 150LB', 
                         submittedBy: 'Budi Santoso', 
                         date: '25/07/2025 10:30', 
+                        batch: 'Inv. Gudang A - Juli 2025',
                         status: 'Menunggu Verifikasi', 
-                        photo: 'https://placehold.co/600x400/cccccc/666666?text=Foto+Valve+1', 
-                        details: { classification: 'Metal', condition: 'Baik', tonnage: '', quantity: 1, uom: 'EA', location: 'Gudang A / AN-FL-01/C'},
-                        previousData: { quantity: 2, uom: 'EA', location: 'AN-FL-01/C', foundSoFar: 1}
+                        photos: ['https://placehold.co/600x400/cccccc/666666?text=Foto+Valve+1', 'https://placehold.co/600x400/cccccc/666666?text=Foto+Valve+2'], 
+                        details: { 
+                            klasifikasi: 'Metal', 
+                            kondisi: 'Baik', 
+                            tonase: '50', 
+                            dimensi: '40x40x30 cm',
+                            expiredDate: '2030-12-31',
+                            assetGroup: '2. Piping System',
+                            keterangan: 'Ditemukan di rak bagian atas.',
+                            lokasi: 'Gudang A / AN-FL-01/C'
+                        }, 
+                        previousData: { 
+                            qtyTotal: 2, 
+                            lokasi: {'AN-FL-01/C': 1, 'AN-FL-02/A': 1}
+                        }
                     },
                     { 
                         id: 'LMAN-LBH-0451', 
                         materialCode: '5200036817', 
                         desc: 'BEAM - 250 MM X 125 MM X 6', 
-                        submittedBy: 'Budi Santoso', 
-                        date: '25/07/2025 09:10', 
-                        status: 'Menunggu Verifikasi', 
-                        photo: 'https://placehold.co/600x400/cccccc/666666?text=Foto+BEAM', 
-                        details: { classification: 'Limbah', condition: 'Rusak Berat', tonnage: 1.2, quantity: 1, uom: 'TON', location: 'Area Limbah / Blok C'},
-                        previousData: { quantity: 1, uom: 'EA', location: 'YD-SHELTER', foundSoFar: 1}
-                    },
-                    { 
-                        id: 'LMAN-BLT-004', 
-                        materialCode: '53051234', 
-                        desc: 'BAUT - HEX M12 x 50mm', 
                         submittedBy: 'Ani Wijaya', 
-                        date: '25/07/2025 10:15', 
+                        date: '25/07/2025 09:10', 
+                        batch: 'Inv. Limbah - Agustus 2025',
                         status: 'Menunggu Verifikasi', 
-                        photo: 'https://placehold.co/600x400/cccccc/666666?text=Foto+Kotak+Baut', 
-                        details: { classification: 'Metal', condition: 'Baik', tonnage: '', quantity: 500, uom: 'PCS', location: 'Gudang C / Rak 4' },
-                        previousData: { quantity: 650, uom: 'PCS', location: 'Gudang C / Rak 4', foundSoFar: 500}
-                    }
+                        photos: ['https://placehold.co/600x400/cccccc/666666?text=Foto+BEAM'], 
+                        details: { 
+                            klasifikasi: 'Metal', 
+                            kondisi: 'Rusak Berat', 
+                            tonase: '1200', 
+                            dimensi: '',
+                            expiredDate: '',
+                            assetGroup: '',
+                            keterangan: 'Korosi parah di beberapa bagian.',
+                            lokasi: 'Area Limbah / Blok C'
+                        }, 
+                        previousData: { 
+                            qtyTotal: 1, 
+                            lokasi: {'YD-SHELTER': 1}
+                        }
+                    },
+                     { 
+                        id: 'LMAN-NEW-001', 
+                        materialCode: '', 
+                        desc: 'COMPRESSOR ANGIN BEKAS', 
+                        submittedBy: 'Budi Santoso', 
+                        date: '26/07/2025 11:00', 
+                        batch: 'Inv. Gudang A - Juli 2025',
+                        status: 'Menunggu Verifikasi', 
+                        photos: ['https://placehold.co/600x400/cccccc/666666?text=Foto+Compressor'], 
+                        details: { 
+                            klasifikasi: 'Metal', 
+                            kondisi: 'Rusak Ringan', 
+                            tonase: '250', 
+                            dimensi: '120x80x100 cm',
+                            expiredDate: '',
+                            assetGroup: '1. Process Equipment, and Mechanical System',
+                            keterangan: 'Aset temuan baru, tidak ada di master data.',
+                            lokasi: 'Gudang A / Pojok Belakang'
+                        }, 
+                        previousData: null
+                    },
                 ]
             }
         },
 
-        // --- TEMPLATE UTAMA UNTUK SETIAP PERAN ---
+        // --- TEMPLATE UNTUK SETIAP HALAMAN/PERAN ---
         templates: {
             login(state) {
-                return `<div class="page flex items-center justify-center min-h-screen"><div class="w-full max-w-md mx-auto p-4"><div class="bg-white rounded-xl shadow-lg p-8"><div class="text-center mb-8"><div class="inline-block bg-gray-200 p-3 rounded-full mb-4"><svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg></div><h1 class="text-2xl font-bold text-gray-800">Sistem Inventarisasi Aset</h1><p class="text-gray-500">Lembaga Manajemen Aset Negara</p></div><div id="form-container"><form id="request-otp-form" class="space-y-6"><div><label for="identifier" class="text-sm font-medium text-gray-700">Email atau Nomor WhatsApp</label><input type="text" id="identifier" name="identifier" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="contoh@lman.go.id" required><p class="text-xs text-gray-500 mt-2">Coba: <strong>admin@lman.go.id</strong>, <strong>petugas@lman.go.id</strong>, atau <strong>verifikator@lman.go.id</strong></p></div><div><button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm font-medium text-white bg-blue-600 hover:bg-blue-700">Kirim Kode OTP</button></div><p id="login-error" class="text-red-500 text-sm text-center hidden">Pengguna tidak ditemukan.</p></form><form id="verify-otp-form" class="hidden space-y-6"><div class="text-center"><p class="font-medium text-gray-800">Masukkan Kode Verifikasi</p><p class="text-sm text-gray-500 mt-1">Kode OTP (123456) telah dikirim ke <strong id="user-identifier-display" class="text-gray-900">${state.loginIdentifier}</strong></p></div><div id="otp-container" class="flex justify-center space-x-2">${[0,1,2,3,4,5].map(i => `<input type="text" maxlength="1" class="otp-input" data-index="${i}">`).join('')}</div><p id="otp-error" class="text-red-500 text-sm text-center hidden">Kode OTP tidak valid.</p><div><button type="submit" class="w-full flex justify-center py-3 px-4 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700">Verifikasi & Login</button></div></form></div></div><p class="text-center text-xs text-gray-500 mt-6">&copy; 2024 LMAN. Hak Cipta Dilindungi.</p></div></div>`;
+                return `
+                <div class="page flex items-center justify-center min-h-screen">
+                    <div class="w-full max-w-md mx-auto p-4">
+                        <div class="bg-white rounded-xl shadow-lg p-8">
+                            <div class="text-center mb-8">
+                                <div class="inline-block bg-gray-200 p-3 rounded-full mb-4">
+                                    <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                </div>
+                                <h1 class="text-2xl font-bold text-gray-800">Sistem Inventarisasi Aset</h1>
+                                <p class="text-gray-500">Lembaga Manajemen Aset Negara</p>
+                            </div>
+                            <div id="form-container">
+                                <form id="request-otp-form" class="space-y-6">
+                                    <div>
+                                        <label for="identifier" class="text-sm font-medium text-gray-700">Email</label>
+                                        <input type="text" id="identifier" name="identifier" class="mt-1 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm" placeholder="admin@lman.go.id" required>
+                                        <p class="text-xs text-gray-500 mt-2">Coba: <strong>admin@lman.go.id</strong> atau <strong>user@lman.go.id</strong></p>
+                                    </div>
+                                    <div><button type="submit" class="w-full flex justify-center py-3 px-4 rounded-lg font-medium text-white bg-blue-600 hover:bg-blue-700">Login</button></div>
+                                    <p id="login-error" class="text-red-500 text-sm text-center hidden">Pengguna tidak ditemukan.</p>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
             },
+            
             admin(state) {
-                return `<div class="page flex h-screen bg-gray-100"><aside class="w-64 flex-shrink-0 bg-gray-800 text-gray-300 flex flex-col"><div class="h-20 flex items-center justify-center bg-gray-900"><div class="flex items-center space-x-3"><div class="bg-blue-500 p-2 rounded-lg"><svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div><span class="text-white text-xl font-bold">Admin Panel</span></div></div><nav class="flex-1 px-4 py-6 space-y-2"><a href="#dashboard" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors hover:bg-gray-700 hover:text-white"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>Dashboard</a><a href="#assets" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors hover:bg-gray-700 hover:text-white"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M6.00004 10.2C6.00004 9.53729 6.53729 9.00004 7.20004 9.00004H16.8C17.4628 9.00004 18 9.53729 18 10.2V13.8C18 14.4628 17.4628 15 16.8 15H7.20004C6.53729 15 6.00004 14.4628 6.00004 13.8V10.2Z M4.00004 10.2C4.00004 8.43272 5.43272 7.00004 7.20004 7.00004H16.8C18.5673 7.00004 20 8.43272 20 10.2V13.8C20 15.5673 18.5673 17 16.8 17H7.20004C5.43272 17 4.00004 15.5673 4.00004 13.8V10.2Z M2.00004 12C2.00004 11.5858 2.33583 11.25 2.75004 11.25H4.00004V12.75H2.75004C2.33583 12.75 2.00004 12.4142 2.00004 12Z"/></svg>Manajemen Aset</a><a href="#users" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors hover:bg-gray-700 hover:text-white"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.97 5.97 0 0112 13a5.97 5.97 0 01-3-1.197z"></path></svg>Manajemen Pengguna</a><a href="#locations" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors hover:bg-gray-700 hover:text-white"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>Manajemen Lokasi</a><a href="#scheduling" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors hover:bg-gray-700 hover:text-white"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 3H21C21.5523 3 22 3.44772 22 4V20C22 20.5523 21.5523 21 21 21H3C2.44772 21 2 20.5523 2 20V4C2 3.44772 2.44772 3 3 3H7V1H9V3H15V1H17V3ZM4 9V19H20V9H4ZM11.4999 13.7324L15.7425 17.975L14.3283 19.3892L10.0857 15.1466L7.25725 17.975L5.84304 16.5608L10.0857 12.3182L11.4999 13.7324Z"></path></svg>Penjadwalan</a><a href="#reports" class="nav-link flex items-center px-4 py-2.5 rounded-lg transition-colors hover:bg-gray-700 hover:text-white"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3H21V5H3V3ZM3 19H21V21H3V19ZM3 11H21V13H3V11ZM13.341 7.208L16.17 10H8V8L11.954 7.083C12.33 6.992 12.633 6.78 12.825 6.48C13.017 6.18 13.133 5.854 13.175 5.5C13.217 5.146 13.167 4.808 13.025 4.488C12.883 4.167 12.658 3.917 12.35 3.738L10 2.5V4.5H8V1.5L12.587 4.096C12.983 4.308 13.279 4.608 13.475 5C13.671 5.392 13.754 5.821 13.725 6.288C13.696 6.754 13.558 7.158 13.313 7.5L13.341 7.208ZM10.688 16.792L8 14H16V16L12.046 16.917C11.67 17.008 11.367 17.22 11.175 17.52C10.983 17.82 10.867 18.146 10.825 18.5C10.783 18.854 10.833 19.192 10.975 19.513C11.117 19.833 11.342 20.083 11.65 20.263L14 21.5V19.5H16V22.5L11.413 19.904C11.017 19.692 10.721 19.392 10.525 19C10.329 18.608 10.246 18.179 10.275 17.713C10.304 17.246 10.442 16.842 10.688 16.5V16.792Z"/></svg>Laporan Global</a></nav><div class="px-4 py-4 border-t border-gray-700"><button data-action="logout" class="w-full flex items-center px-4 py-2.5 rounded-lg text-red-400 hover:bg-red-500 hover:text-white"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Logout</button></div></aside><div class="flex-1 flex flex-col overflow-hidden"><header class="h-20 flex justify-between items-center px-8 bg-white border-b"><h1 id="page-title" class="text-2xl font-bold text-gray-800"></h1><div class="flex items-center space-x-4"><span class="text-gray-600">Selamat datang, <span class="font-semibold">${state.currentUser.name}</span></span><img class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/100x100/E2E8F0/4A5568?text=A" alt="Avatar Admin"></div></header><main id="admin-main-content" class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-8"></main></div></div>`;
+                return `
+                <div class="page flex h-screen bg-gray-100">
+                    <aside class="w-64 flex-shrink-0 bg-gray-800 text-gray-300 flex flex-col">
+                        <div class="h-20 flex items-center justify-center bg-gray-900"><div class="flex items-center space-x-3"><div class="bg-blue-500 p-2 rounded-lg"><svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg></div><span class="text-white text-xl font-bold">Admin Panel</span></div></div>
+                        <nav class="flex-1 px-4 py-6 space-y-2">
+                            <a href="#dashboard" class="nav-link flex items-center px-4 py-2.5 rounded-lg"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>Dashboard</a>
+                            
+                            <p class="px-4 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase">Data Master</p>
+                            <a href="#master-mi" class="nav-link flex items-center px-4 py-2.5 rounded-lg"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" /></svg>Master MI</a>
+                            <a href="#katalog-mi" class="nav-link flex items-center px-4 py-2.5 rounded-lg"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>Katalog MI</a>
+                            
+                            <p class="px-4 pt-4 pb-2 text-xs font-semibold text-gray-400 uppercase">Operasional</p>
+                            <a href="#kegiatan" class="nav-link flex items-center px-4 py-2.5 rounded-lg"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" /></svg>Kegiatan & Batch</a>
+                            <a href="#users" class="nav-link flex items-center px-4 py-2.5 rounded-lg"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M15 21a6 6 0 00-9-5.197m0 0A5.97 5.97 0 0112 13a5.97 5.97 0 01-3-1.197z"></path></svg>Manajemen User</a>
+                            <a href="#locations" class="nav-link flex items-center px-4 py-2.5 rounded-lg"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>Manajemen Lokasi</a>
+                            <a href="#reports" class="nav-link flex items-center px-4 py-2.5 rounded-lg"><svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3H21V5H3V3ZM3 19H21V21H3V19ZM3 11H21V13H3V11Z"/></svg>Laporan</a>
+                        </nav>
+                        <div class="px-4 py-4 border-t border-gray-700"><button data-action="logout" class="w-full flex items-center px-4 py-2.5 rounded-lg text-red-400 hover:bg-red-500 hover:text-white"><svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>Logout</button></div>
+                    </aside>
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        <header class="h-20 flex justify-between items-center px-8 bg-white border-b"><h1 id="page-title" class="text-2xl font-bold text-gray-800"></h1><div class="flex items-center space-x-4"><span class="text-gray-600">Selamat datang, <span class="font-semibold">${state.currentUser.name}</span></span><img class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/100x100/E2E8F0/4A5568?text=A" alt="Avatar Admin"></div></header>
+                        <main id="admin-main-content" class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-8"></main>
+                    </div>
+                </div>`;
             },
-            petugas(state) {
-                return `<div class="page max-w-md mx-auto bg-white min-h-screen shadow-2xl flex flex-col"><div id="petugas-screen-container" class="flex-grow"><!-- Konten aplikasi petugas dirender di sini --></div><div class="p-4 bg-gray-800 text-white text-center flex-shrink-0"><button data-action="logout" class="text-sm hover:underline">Logout (${state.currentUser.name})</button></div></div>`;
-            },
-            verifikator(state) {
-                return `<div class="page max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8"><header class="flex justify-between items-center mb-8"><div><h1 class="text-3xl font-bold text-gray-900">Dashboard Verifikator</h1><p class="text-gray-500">Selamat datang, ${state.currentUser.name}</p></div><button data-action="logout" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600">Logout</button></header><div id="verifikator-screen-container"><!-- Konten aplikasi verifikator dirender di sini --></div></div>`;
+            
+            user(state) {
+                return `<div id="user-page-container" class="page"></div>`;
             },
         },
 
-        init() {
-            this.renderPage();
-            this.attachGlobalListeners();
-        },
-
+        init() { this.renderPage(); this.attachEventListeners(); },
         renderPage() {
-            const container = document.getElementById('app-container');
-            const pageTemplate = this.templates[this.state.currentPage] || this.templates.login;
-            container.innerHTML = pageTemplate(this.state);
+            document.getElementById('app-container').innerHTML = this.templates[this.state.currentPage](this.state);
             this.postRender();
         },
-
         postRender() {
-            if (this.state.currentPage === 'admin') this.admin.init();
-            if (this.state.currentPage === 'petugas') this.petugas.init();
-            if (this.state.currentPage === 'verifikator') this.verifikator.init();
-            if (this.state.currentPage === 'login') this.attachLoginListeners();
+            const page = this.state.currentPage;
+            if (page === 'admin') this.admin.init();
+            if (page === 'user') this.user.init();
         },
-
-        attachGlobalListeners() {
-            document.getElementById('app-container').addEventListener('click', (e) => {
-                const actionTarget = e.target.closest('[data-action="logout"]');
-                if (actionTarget) {
+        attachEventListeners() {
+            const container = document.getElementById('app-container');
+            container.addEventListener('click', (e) => {
+                const actionTarget = e.target.closest('[data-action]');
+                if (actionTarget && actionTarget.dataset.action === 'logout') {
                     window.location.hash = '';
-                    this.state.currentUser = null;
-                    this.state.currentPage = 'login';
+                    this.state.currentUser = null; this.state.currentPage = 'login';
                     this.renderPage();
                 }
             });
-        },
-
-        attachLoginListeners() {
-            const requestForm = document.getElementById('request-otp-form');
-            const verifyForm = document.getElementById('verify-otp-form');
-            if(!requestForm || !verifyForm) return;
-
-            requestForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const identifier = e.target.identifier.value.trim().toLowerCase();
-                if (this.users[identifier]) {
-                    this.state.loginIdentifier = identifier;
-                    requestForm.classList.add('hidden');
-                    verifyForm.classList.remove('hidden');
-                    document.getElementById('user-identifier-display').textContent = identifier;
-                    document.querySelector('.otp-input').focus();
-                    document.getElementById('login-error').classList.add('hidden');
-                } else {
-                    document.getElementById('login-error').classList.remove('hidden');
-                }
-            });
-            verifyForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                let enteredOtp = Array.from(e.target.querySelectorAll('.otp-input')).map(input => input.value).join('');
-                if (enteredOtp === '123456') {
-                    const user = this.users[this.state.loginIdentifier];
-                    this.state.currentUser = { ...user, identifier: this.state.loginIdentifier };
-                    this.state.currentPage = user.role;
-                    this.renderPage();
-                } else {
-                    document.getElementById('otp-error').classList.remove('hidden');
+            container.addEventListener('submit', (e) => {
+                if (e.target.id === 'request-otp-form') {
+                    e.preventDefault();
+                    const identifier = e.target.identifier.value.trim().toLowerCase();
+                    if (this.users[identifier]) {
+                        this.state.currentUser = { ...this.users[identifier], identifier };
+                        this.state.currentPage = this.users[identifier].role;
+                        this.renderPage();
+                    } else { document.getElementById('login-error').classList.remove('hidden'); }
                 }
             });
         },
         
-        // --- LOGIC KHUSUS UNTUK SETIAP PERAN ---
         admin: {
-            init() {
-                this.injectAllContentPages();
-                this.renderContent(window.location.hash);
-                this.attachAdminListeners();
-            },
-            injectAllContentPages() {
-                const container = document.getElementById('admin-main-content');
-                if (!container) return;
-                let allContentHTML = '';
-                for (const pageKey in this.contentTemplates) {
-                    allContentHTML += this.contentTemplates[pageKey](App.state);
-                }
-                container.innerHTML = allContentHTML;
-            },
+            // --- DATA SIMULASI UNTUK ADMIN ---
+            masterAsetData: [
+                { code: '5200007420', desc: 'VALVE-SAFETY,TYPE: NS255DB,1.5 IN 300', qty: 1, unit: 'EA', location: 'AN PH-10' },
+                { code: '5200036051', desc: 'VALVE BUTTERFLY, 16IN, 150LB', qty: 2, unit: 'EA', location: 'AN-FL-01/C' },
+                { code: '5200035623', desc: 'VALVE - GATE, 8IN, 150LB, EXTEN.STEM', qty: 1, unit: 'EA', location: 'AN-FL-02/A' },
+                { code: '5200036817', desc: 'BEAM - 250 MM X 125 MM X 6', qty: 1, unit: 'EA', location: 'YD-SHELTER' },
+                { code: '5200036825', desc: 'PLATE - STEEL,1/8IN X 4 X 8 FT, MATL CS', qty: 0, unit: 'EA', location: 'YD-SHELTER' }
+            ],
+
+            init() { this.renderContent(window.location.hash || '#dashboard'); this.attachAdminListeners(); },
             renderContent(hash) {
-                const mainContainer = document.getElementById('admin-main-content');
-                if (!mainContainer) return;
-                const titleEl = document.getElementById('page-title');
-                let targetHash = hash || '#dashboard';
-                mainContainer.querySelectorAll('.page-content').forEach(c => c.classList.add('hidden'));
+                const container = document.getElementById('admin-main-content');
+                const title = document.getElementById('page-title');
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                let contentId = `${targetHash.substring(1)}-content`;
-                let activeLink = document.querySelector(`.nav-link[href="${targetHash}"]`);
-                let contentToShow = document.getElementById(contentId);
-                if (!contentToShow) {
-                    targetHash = '#dashboard';
-                    contentToShow = document.getElementById('dashboard-content');
-                    activeLink = document.querySelector('.nav-link[href="#dashboard"]');
+                let activeLink = document.querySelector(`.nav-link[href="${hash}"]`) || document.querySelector('.nav-link[href="#dashboard"]');
+                activeLink.classList.add('active');
+                let pageId = hash.substring(1).split('?')[0];
+                if (this.contentTemplates[pageId]) {
+                    title.textContent = this.pageTitles[pageId] || activeLink.textContent.trim();
+                    container.innerHTML = this.contentTemplates[pageId](App.state);
+                } else {
+                    title.textContent = "Dashboard"; container.innerHTML = this.contentTemplates.dashboard(App.state);
                 }
-                const actionLinkPages = { '#monitoring': 'Pemantauan Aktif', '#batch-report': 'Laporan Batch'};
-                if (actionLinkPages[targetHash]) {
-                     activeLink = document.querySelector('.nav-link[href="#scheduling"]');
-                     titleEl.textContent = actionLinkPages[targetHash];
-                } else if (activeLink) {
-                    titleEl.textContent = activeLink.textContent.trim();
-                }
-                if (contentToShow) contentToShow.classList.remove('hidden');
-                if (activeLink) activeLink.classList.add('active');
             },
             attachAdminListeners() {
-                const adminPageContainer = document.querySelector('.page.flex.h-screen');
-                if (!adminPageContainer || adminPageContainer.dataset.listenerAttached) return;
-                adminPageContainer.dataset.listenerAttached = 'true';
-                adminPageContainer.addEventListener('click', (e) => {
-                    const target = e.target.closest('.nav-link, .action-link');
-                    if (target) {
-                        e.preventDefault();
-                        const targetHash = target.getAttribute('href');
-                        if (targetHash) window.location.hash = targetHash;
-                    }
-                });
-            },
-            contentTemplates: {
-                dashboard: (state) => `<div id="dashboard-content" class="page-content"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total Aset Ter-tagging</h3><p class="text-3xl font-bold text-gray-800">1.258</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Batch Berlangsung</h3><p class="text-3xl font-bold text-yellow-600">1</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Menunggu Verifikasi</h3><p class="text-3xl font-bold text-blue-600">${state.verifikator.verificationList.length}</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Aset Hilang (Global)</h3><p class="text-3xl font-bold text-red-600">1</p></div></div><div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold text-gray-700 mb-4">Aset Berdasarkan Kondisi</h2><div class="relative h-64"><div class="absolute inset-0 flex items-end space-x-4 px-4"><div class="w-1/3 bg-green-500 rounded-t-lg" style="height: 80%"><span class="text-white text-sm p-1">Baik (1010)</span></div><div class="w-1/3 bg-yellow-500 rounded-t-lg" style="height: 50%"><span class="text-white text-sm p-1">Rusak Ringan (198)</span></div><div class="w-1/3 bg-red-500 rounded-t-lg" style="height: 30%"><span class="text-white text-sm p-1">Rusak Berat (50)</span></div></div></div></div></div>`,
-                assets: () => `<div id="assets-content" class="page-content hidden"><div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold text-gray-700 mb-6">Master Data Aset</h2><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3">ID Tag</th><th scope="col" class="px-6 py-3">Material Code</th><th scope="col" class="px-6 py-3">Deskripsi</th><th scope="col" class="px-6 py-3">Kondisi</th><th scope="col" class="px-6 py-3">Lokasi</th><th scope="col" class="px-6 py-3">Tgl. Verifikasi</th><th scope="col" class="px-6 py-3">Aksi</th></tr></thead><tbody><tr class="bg-white border-b"><td class="px-6 py-4 font-medium text-gray-900">LMAN-VLV-0001</td><td class="px-6 py-4">5200007420</td><td class="px-6 py-4">VALVE-SAFETY,TYPE: NS255DB</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Baik</span></td><td class="px-6 py-4">Gudang A / AN PH-10</td><td class="px-6 py-4">20/07/2025</td><td class="px-6 py-4"><button class="font-medium text-blue-600 hover:underline">Detail</button></td></tr><tr class="bg-gray-50 border-b"><td class="px-6 py-4 font-medium text-gray-900">LMAN-VLV-0002</td><td class="px-6 py-4">5200036051</td><td class="px-6 py-4">VALVE BUTTERFLY, 16IN</td><td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">Rusak Ringan</span></td><td class="px-6 py-4">Gudang A / AN-FL-01/C</td><td class="px-6 py-4">21/07/2025</td><td class="px-6 py-4"><button class="font-medium text-blue-600 hover:underline">Detail</button></td></tr></tbody></table></div></div></div>`,
-                users: () => `<div id="users-content" class="page-content hidden"><div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold text-gray-700 mb-6">Manajemen Pengguna</h2><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3">Nama</th><th scope="col" class="px-6 py-3">Email / No. WA</th><th scope="col" class="px-6 py-3">Peran</th><th scope="col" class="px-6 py-3">Status</th><th scope="col" class="px-6 py-3">Aksi</th></tr></thead><tbody><tr class="bg-white border-b"><td class="px-6 py-4 font-medium text-gray-900">Admin LMAN</td><td class="px-6 py-4">admin.lman@email.com</td><td class="px-6 py-4">Admin</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Aktif</span></td><td class="px-6 py-4"><button class="font-medium text-blue-600 hover:underline">Edit</button></td></tr><tr class="bg-gray-50 border-b"><td class="px-6 py-4 font-medium text-gray-900">Citra Lestari</td><td class="px-6 py-4">citra.l@email.com</td><td class="px-6 py-4">Verifikator</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Aktif</span></td><td class="px-6 py-4"><button class="font-medium text-blue-600 hover:underline">Edit</button></td></tr></tbody></table></div></div></div>`,
-                locations: () => `<div id="locations-content" class="page-content hidden"><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><div class="bg-white p-6 rounded-xl shadow-md"><h3 class="font-semibold text-gray-700 mb-4">Master Gedung / Area</h3><ul class="space-y-2"><li class="bg-gray-100 p-2 rounded">Gudang A</li><li class="bg-gray-100 p-2 rounded">Gudang B</li></ul></div><div class="bg-white p-6 rounded-xl shadow-md"><h3 class="font-semibold text-gray-700 mb-4">Master Storage Location</h3><ul class="space-y-2"><li class="bg-gray-100 p-2 rounded">AN PH-10</li><li class="bg-gray-100 p-2 rounded">AN-FL-01/C</li></ul></div><div class="bg-white p-6 rounded-xl shadow-md"><h3 class="font-semibold text-gray-700 mb-4">Master Storage Bin</h3><ul class="space-y-2"><li class="bg-gray-100 p-2 rounded">Rak 1</li><li class="bg-gray-100 p-2 rounded">Rak 2</li></ul></div></div></div>`,
-                scheduling: () => `<div id="scheduling-content" class="page-content hidden"><div class="bg-white p-6 rounded-xl shadow-md"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-semibold text-gray-700">Penjadwalan Inventarisasi</h2><button class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium">Buat Batch Baru</button></div><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th scope="col" class="px-6 py-3">Nama Batch</th><th scope="col" class="px-6 py-3">Periode</th><th scope="col" class="px-6 py-3">Status</th><th scope="col" class="px-6 py-3">Aksi</th></tr></thead><tbody><tr class="bg-white border-b"><td class="px-6 py-4">Inv. Gudang A - Juli 2025</td><td class="px-6 py-4">01/07/2025 - 31/07/2025</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full">Selesai</span></td><td class="px-6 py-4"><a href="#batch-report" data-batch-id="B001" class="action-link text-blue-600 hover:underline">Lihat Laporan</a></td></tr><tr class="bg-gray-50 border-b"><td class="px-6 py-4">Inv. Limbah - Agustus 2025</td><td class="px-6 py-4">01/08/2025 - 31/08/2025</td><td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-0.5 rounded-full">Berlangsung</span></td><td class="px-6 py-4"><a href="#monitoring" data-batch-id="B002" class="action-link text-blue-600 hover:underline">Pantau Progres</a></td></tr></tbody></table></div></div></div>`,
-                reports: () => `<div id="reports-content" class="page-content hidden"><div class="bg-white p-6 rounded-xl shadow-md"><div class="flex justify-between items-center mb-6 border-b pb-4"><h2 class="text-xl font-semibold text-gray-700">Laporan Selisih Global</h2><button class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium">Export ke Excel</button></div><div class="mb-8"><h3 class="text-lg font-semibold text-gray-800 mb-3">Selisih Kuantitas</h3><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Material Code</th><th class="px-6 py-3">Deskripsi</th><th class="px-6 py-3">Stok Lama</th><th class="px-6 py-3">Stok Baru</th><th class="px-6 py-3">Selisih</th></tr></thead><tbody><tr class="bg-white border-b"><td class="px-6 py-4">5200036051</td><td class="px-6 py-4">VALVE BUTTERFLY, 16IN</td><td class="px-6 py-4">2</td><td class="px-6 py-4">1</td><td class="px-6 py-4"><span class="font-bold text-red-600">-1</span></td></tr></tbody></table></div></div></div></div>`,
-                monitoring: () => `<div id="monitoring-content" class="page-content hidden"><div class="bg-white p-6 rounded-xl shadow-md"><div class="border-b pb-4 mb-6"><a href="#scheduling" class="action-link text-blue-600 hover:underline mb-4 inline-block">&larr; Kembali</a><h2 class="text-xl font-semibold text-gray-700">Pemantauan: Inv. Limbah - Agustus 2025</h2></div><div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"><div class="bg-blue-50 p-4 rounded-lg"><h3 class="font-semibold text-blue-800">Aset Di-scan (Hari ini)</h3><p class="text-2xl font-bold text-blue-600">124</p></div><div class="bg-green-50 p-4 rounded-lg"><h3 class="font-semibold text-green-800">Progres Batch</h3><p class="text-2xl font-bold text-green-600">35%</p></div></div></div></div>`,
-                'batch-report': () => `<div id="batch-report-content" class="page-content hidden"><div class="bg-white p-6 rounded-xl shadow-md"><div class="border-b pb-4 mb-6"><a href="#scheduling" class="action-link text-blue-600 hover:underline mb-4 inline-block">&larr; Kembali</a><h2 class="text-xl font-semibold text-gray-700">Laporan: Inv. Gudang A - Juli 2025</h2></div><p>Detail laporan untuk batch yang telah selesai akan muncul di sini.</p></div></div>`,
-            }
-        },
-        
-        petugas: {
-            init() {
-                this.renderScreen('dashboard');
-                this.attachListeners();
-            },
-            renderScreen(screenName) {
-                const container = document.getElementById('petugas-screen-container');
-                if (container && this.screens[screenName]) {
-                    container.innerHTML = this.screens[screenName](App.state);
-                }
-                this.postRenderScreen(screenName);
-            },
-            postRenderScreen(screenName){
-                if(screenName === 'inputDetails' && App.state.petugas.currentAsset) {
-                    document.getElementById('current-asset-desc').textContent = App.state.petugas.currentAsset.desc;
-                    document.getElementById('current-asset-code').textContent = `Material Code: ${App.state.petugas.currentAsset.code}`;
-                }
-                if(screenName === 'success' && App.state.petugas.scannedTag) {
-                    document.getElementById('success-tag-id').textContent = App.state.petugas.scannedTag;
-                }
-            },
-            attachListeners() {
-                const container = document.getElementById('petugas-screen-container');
-                if (!container || container.dataset.listenerAttached) return;
-                container.dataset.listenerAttached = 'true';
-                container.addEventListener('click', (e) => {
+                document.body.addEventListener('click', e => {
+                    const navLink = e.target.closest('.nav-link, .action-link');
+                    if (navLink) { e.preventDefault(); const hash = navLink.getAttribute('href'); window.location.hash = hash; this.renderContent(hash); }
+                    
                     const actionTarget = e.target.closest('[data-action]');
-                    const materialItem = e.target.closest('.material-item');
                     if (actionTarget) {
-                        e.preventDefault();
                         const action = actionTarget.dataset.action;
-                        if (this.actions[action]) this.actions[action]();
-                    } else if (materialItem) {
-                        App.state.petugas.currentAsset = {
-                            code: materialItem.dataset.code,
-                            desc: materialItem.dataset.desc
-                        };
-                        this.renderScreen('inputDetails');
-                    }
-                });
-            },
-            actions: {
-                'start-inventory': function() { App.petugas.renderScreen('identifyAsset'); },
-                'back-to-dashboard': function() { 
-                    App.state.petugas.currentAsset = null;
-                    App.state.petugas.scannedTag = null;
-                    App.petugas.renderScreen('dashboard'); 
-                },
-                'back-to-identify': function() { App.petugas.renderScreen('identifyAsset'); },
-                'scan-tag': function() {
-                    const randomNum = Math.floor(1000 + Math.random() * 9000);
-                    App.state.petugas.scannedTag = `LMAN-XYZ-${randomNum}`;
-                    const input = document.getElementById('id-tag-input');
-                    if(input) input.value = App.state.petugas.scannedTag;
-                },
-                'take-photo': function() {
-                    const status = document.getElementById('photo-status');
-                    if (status) status.classList.remove('hidden');
-                },
-                'save-data': function() {
-                    if (!App.state.petugas.scannedTag) {
-                        alert('Harap pindai ID Tag terlebih dahulu!');
-                        return;
-                    }
-                    App.petugas.renderScreen('success');
-                },
-                'next-asset': function() {
-                    App.state.petugas.currentAsset = null;
-                    App.state.petugas.scannedTag = null;
-                    App.petugas.renderScreen('identifyAsset');
-                }
-            },
-            screens: {
-                dashboard: (state) => `<div class="screen p-6"><header class="mb-8"><p class="text-gray-500">Selamat datang,</p><h1 class="text-2xl font-bold text-gray-800">${state.currentUser.name}</h1></header><div class="bg-blue-50 border border-blue-200 p-5 rounded-xl mb-6"><h2 class="font-semibold text-blue-800">Batch Inventarisasi Aktif</h2><p class="text-lg font-bold text-blue-900">${state.petugas.activeBatch}</p><p class="text-sm text-gray-600">Cakupan: Klasifikasi Limbah</p></div><button data-action="start-inventory" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl text-lg hover:bg-blue-700 transition-transform active:scale-95">Mulai Inventarisasi</button><div class="mt-8"><h3 class="font-semibold text-gray-700 mb-3">Aktivitas Saya Hari Ini</h3><div class="bg-gray-50 p-4 rounded-lg"><p><span class="font-bold">Total Aset Diinput:</span> 58</p><p><span class="font-bold">Menunggu Verifikasi:</span> 4</p><p><span class="font-bold">Ditolak:</span> 1</p></div></div></div>`,
-                identifyAsset: () => `<div class="screen p-6"><header class="mb-6 text-center"><a href="#" data-action="back-to-dashboard" class="text-blue-600 absolute left-6">&larr; Kembali</a><h1 class="text-xl font-bold text-gray-800">Langkah 1: Identifikasi Aset</h1></header><div class="mb-4"><label for="search-material" class="block text-sm font-medium text-gray-700 mb-1">Cari Material Code atau Deskripsi</label><input type="search" id="search-material" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Contoh: 5200036817 atau BEAM"></div><div id="search-results" class="bg-gray-50 p-2 rounded-lg h-[60vh] overflow-y-auto"><div class="p-3 hover:bg-blue-100 rounded-lg cursor-pointer material-item" data-code="5200036817" data-desc="BEAM - 250 MM X 125 MM X 6"><p class="font-semibold">BEAM - 250 MM X 125 MM X 6</p><p class="text-sm text-gray-500">Material Code: 5200036817</p></div><div class="p-3 hover:bg-blue-100 rounded-lg cursor-pointer material-item" data-code="5200035623" data-desc="VALVE - GATE, 8IN, 150LB, EXTEN.STEM"><p class="font-semibold">VALVE - GATE, 8IN, 150LB, EXTEN.STEM</p><p class="text-sm text-gray-500">Material Code: 5200035623</p></div></div></div>`,
-                inputDetails: () => `<div class="screen p-6 overflow-y-auto h-full"><header class="mb-6 text-center"><a href="#" data-action="back-to-identify" class="text-blue-600 absolute left-6">&larr; Cari Ulang</a><h1 class="text-xl font-bold text-gray-800">Langkah 2: Detail Aset</h1></header><div class="bg-gray-50 p-4 rounded-lg mb-4"><p id="current-asset-desc" class="font-semibold"></p><p id="current-asset-code" class="text-sm text-gray-500"></p></div><div class="space-y-4"><div><label class="block text-sm font-medium text-gray-700 mb-1">ID Tag Baru</label><div class="flex items-center space-x-2"><input type="text" id="id-tag-input" class="w-full p-3 border border-gray-300 rounded-lg bg-gray-100" placeholder="Pindai QR Code..." readonly><button data-action="scan-tag" class="bg-gray-800 text-white p-3 rounded-lg hover:bg-gray-900 active:scale-95"><svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H4C3.44772 2 3 2.44772 3 3V21C3 21.5523 3.44772 22 4 22H20C20.5523 22 21 21.5523 21 21V8L14 2ZM5 4H13V9H19V20H5V4ZM15 3.41421L18.5858 7H15V3.41421ZM8 10V14H6V10H8ZM10 16V18H8V16H10ZM10 10H12V12H10V10ZM12 14H10V16H12V14ZM14 10H16V12H14V10ZM16 14H14V16H16V14Z"/></svg></button></div></div><div><label class="block text-sm font-medium text-gray-700 mb-1">Foto Aset</label><button data-action="take-photo" class="w-full flex items-center justify-center p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:bg-gray-50"><svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>Ambil Foto</button><p id="photo-status" class="text-sm text-green-600 mt-1 hidden">✓ foto_aset_123.jpg</p></div><div><label for="classification" class="block text-sm font-medium text-gray-700 mb-1">Klasifikasi</label><select id="classification" class="w-full p-3 border border-gray-300 rounded-lg"><option>Metal</option><option>Non Metal</option><option selected>Limbah</option></select></div><div><label for="condition" class="block text-sm font-medium text-gray-700 mb-1">Kondisi</label><select id="condition" class="w-full p-3 border border-gray-300 rounded-lg"><option>Baik</option><option>Rusak Ringan</option><option>Rusak Berat</option></select></div><div><label for="tonnage" class="block text-sm font-medium text-gray-700 mb-1">Tonase (Opsional)</label><input type="number" id="tonnage" placeholder="Contoh: 1.5" class="w-full p-3 border border-gray-300 rounded-lg"></div><div class="flex items-center space-x-2"><div class="flex-1"><label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">Kuantitas</label><input type="number" id="quantity" value="1" class="w-full p-3 border border-gray-300 rounded-lg"></div><div class="flex-1"><label for="uom" class="block text-sm font-medium text-gray-700 mb-1">Unit</label><select id="uom" class="w-full p-3 border border-gray-300 rounded-lg"><option>EA</option><option>PCS</option><option>MTR</option><option>KG</option><option>TON</option></select></div></div><div><label for="location" class="block text-sm font-medium text-gray-700 mb-1">Lokasi</label><select id="location" class="w-full p-3 border border-gray-300 rounded-lg"><option>Gudang A / AN-FL-01/C</option><option>Area Limbah / Blok A</option><option>Area Limbah / Blok C</option><option>YD-SHELTER / S-01</option></select></div></div><button data-action="save-data" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl text-lg hover:bg-green-700 transition-transform active:scale-95 mt-6">Simpan Data</button></div>`,
-                success: (state) => `<div class="screen p-8 text-center flex flex-col items-center justify-center h-full"><div class="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mb-6"><svg class="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg></div><h1 class="text-2xl font-bold text-gray-800 mb-2">Data Berhasil Disimpan!</h1><p class="text-gray-600 mb-8">Data untuk ID Tag <span id="success-tag-id" class="font-semibold">${state.petugas.scannedTag || ''}</span> telah dikirim untuk verifikasi.</p><button data-action="next-asset" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl text-lg hover:bg-blue-700 transition-transform active:scale-95 mb-4">Input Aset Berikutnya</button><a href="#" data-action="back-to-dashboard" class="text-gray-600 hover:underline">Kembali ke Menu Utama</a></div>`
-            }
-        },
-
-        verifikator: {
-             init() {
-                this.renderScreen('verificationList');
-                this.attachListeners();
-            },
-            renderScreen(screenName) {
-                const container = document.getElementById('verifikator-screen-container');
-                if (!container) return;
-                if (screenName === 'verificationList') {
-                    container.innerHTML = this.screens.verificationList(App.state.verifikator.verificationList);
-                } else if (screenName === 'verificationDetail' && App.state.verifikator.currentItem) {
-                    container.innerHTML = this.screens.verificationDetail(App.state.verifikator.currentItem);
-                }
-            },
-            attachListeners() {
-                const appContainer = document.getElementById('app-container');
-                if (!appContainer || appContainer.dataset.verifierListener) return;
-                appContainer.dataset.verifierListener = 'true';
-                
-                appContainer.addEventListener('click', (e) => {
-                    if (App.state.currentPage !== 'verifikator') return;
-
-                    const backBtn = e.target.closest('#back-to-list');
-                    const reviewBtn = e.target.closest('.review-btn');
-                    const rejectBtn = e.target.closest('#reject-btn');
-                    const approveBtn = e.target.closest('#approve-btn');
-
-                    if (backBtn) {
-                        e.preventDefault();
-                        this.actions['back-to-list']();
-                    }
-                    if (reviewBtn) {
-                        e.preventDefault();
-                        this.actions['review-item'](reviewBtn.dataset.id);
-                    }
-                    if (rejectBtn) {
-                        e.preventDefault();
-                        this.actions['reject-item']();
-                    }
-                    if (approveBtn) {
-                        e.preventDefault();
-                        this.actions['approve-item']();
-                    }
-                });
-            },
-            actions: {
-                'back-to-list': function() {
-                    App.state.verifikator.currentItem = null;
-                    App.verifikator.renderScreen('verificationList');
-                },
-                'review-item': function(itemId) {
-                    App.state.verifikator.currentItem = App.state.verifikator.verificationList.find(item => item.id === itemId);
-                    if(App.state.verifikator.currentItem) {
-                        App.verifikator.renderScreen('verificationDetail');
-                    }
-                },
-                'approve-item': function() {
-                    if (!App.state.verifikator.currentItem) return;
-                    alert(`Aset ${App.state.verifikator.currentItem.id} berhasil disetujui.`);
-                    App.state.verifikator.verificationList = App.state.verifikator.verificationList.filter(item => item.id !== App.state.verifikator.currentItem.id);
-                    this['back-to-list']();
-                },
-                'reject-item': function() {
-                    if (!App.state.verifikator.currentItem) return;
-                    const reasonContainer = document.getElementById('rejection-reason-container');
-                    if (reasonContainer) {
-                        reasonContainer.classList.remove('hidden');
-                        const reasonTextEl = document.getElementById('rejection-reason');
-                        if (reasonTextEl && reasonTextEl.value) {
-                             alert(`Aset ditolak dengan alasan: ${reasonTextEl.value}`);
-                             App.state.verifikator.verificationList = App.state.verifikator.verificationList.filter(item => item.id !== App.state.verifikator.currentItem.id);
-                             this['back-to-list']();
-                        } else if(reasonTextEl) {
-                           reasonTextEl.focus();
+                        if(action === 'open-kegiatan-modal' || action === 'open-batch-modal') {
+                            document.getElementById(actionTarget.dataset.modal).classList.remove('hidden');
+                        }
+                        if(action === 'close-modal') {
+                            actionTarget.closest('.modal-container').classList.add('hidden');
                         }
                     }
-                },
+                });
+                document.body.addEventListener('submit', e => {
+                    if(e.target.id === 'form-kegiatan' || e.target.id === 'form-batch') {
+                        e.preventDefault();
+                        alert('Data baru berhasil disimpan!');
+                        e.target.closest('.modal-container').classList.add('hidden');
+                    }
+                });
             },
-            screens: {
-                verificationList(data) {
-                    let listItems = data.map(item => `
+            pageTitles: {
+                'dashboard': 'Dashboard', 'master-mi': 'Manajemen Master MI', 'katalog-mi': 'Manajemen Katalog MI',
+                'users': 'Manajemen User', 'locations': 'Manajemen Lokasi', 'kegiatan': 'Kegiatan & Batch', 'reports': 'Laporan',
+            },
+            contentTemplates: {
+                dashboard: () => `<div class="page-content"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total Aset di Master</h3><p class="text-3xl font-bold text-gray-800">${App.admin.masterAsetData.length}</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total Kegiatan</h3><p class="text-3xl font-bold text-yellow-600">1</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total User Aktif</h3><p class="text-3xl font-bold text-blue-600">4</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Aset Belum Diverifikasi</h3><p class="text-3xl font-bold text-red-600">0</p></div></div></div>`,
+                'master-mi': () => {
+                    const tableRows = App.admin.masterAsetData.map(item => `
                         <tr class="bg-white border-b hover:bg-gray-50">
-                            <td class="px-6 py-4 font-medium text-gray-900">${item.id}</td>
+                            <td class="px-6 py-4 font-mono text-sm">${item.code}</td>
                             <td class="px-6 py-4">${item.desc}</td>
-                            <td class="px-6 py-4">${item.submittedBy}</td>
-                            <td class="px-6 py-4">${item.date}</td>
-                            <td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${item.status}</span></td>
-                            <td class="px-6 py-4"><button data-id="${item.id}" class="review-btn bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700">Periksa</button></td>
-                        </tr>`).join('');
+                            <td class="px-6 py-4 text-center">${item.qty}</td>
+                            <td class="px-6 py-4 text-center">${item.unit}</td>
+                            <td class="px-6 py-4">${item.location}</td>
+                            <td class="px-6 py-4 flex space-x-2 justify-center">
+                                <button class="text-blue-600 hover:text-blue-800" title="Edit"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z"></path></svg></button>
+                                <button class="text-red-600 hover:text-red-800" title="Delete"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </td>
+                        </tr>
+                    `).join('');
 
-                    return `<div class="screen"><div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Menunggu Verifikasi</h3><p class="text-3xl font-bold text-yellow-600">${data.length}</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Diverifikasi Hari Ini</h3><p class="text-3xl font-bold text-green-600">25</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Ditolak Hari Ini</h3><p class="text-3xl font-bold text-red-600">2</p></div></div><div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold text-gray-700 mb-6">Daftar Aset untuk Diverifikasi</h2><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">ID Tag</th><th class="px-6 py-3">Deskripsi</th><th class="px-6 py-3">Diinput Oleh</th><th class="px-6 py-3">Tgl. Input</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">Aksi</th></tr></thead><tbody>${listItems}</tbody></table></div></div></div>`;
+                    return `<div class="page-content bg-white p-6 rounded-xl shadow-md"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-semibold text-gray-700">Manajemen Master MI</h2><div class="flex space-x-2"><button class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center"><svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>Import Data</button><button class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium flex items-center"><svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>Tambah Aset</button></div></div><div class="overflow-x-auto"><table class="w-full text-sm text-left text-gray-500"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Material Code</th><th class="px-6 py-3">Nama Aset</th><th class="px-6 py-3 text-center">Kuantitas</th><th class="px-6 py-3 text-center">Unit</th><th class="px-6 py-3">Lokasi</th><th class="px-6 py-3 text-center">Aksi</th></tr></thead><tbody>${tableRows}</tbody></table></div></div>`;
                 },
-                verificationDetail(item) {
-                   return `<div class="screen"><div class="mb-6"><a href="#" id="back-to-list" class="text-blue-600 hover:underline">&larr; Kembali ke Daftar</a></div><div class="bg-white p-8 rounded-xl shadow-md"><h2 class="text-2xl font-bold text-gray-800 mb-6">Detail Verifikasi Aset: ${item.id}</h2><div class="grid grid-cols-1 lg:grid-cols-2 gap-8"><div><h3 class="text-lg font-semibold text-gray-700 mb-2">Foto Aset</h3><img src="${item.photo}" alt="Foto Aset ${item.id}" class="w-full rounded-lg shadow-md"></div><div class="space-y-4"><div><h3 class="text-lg font-semibold text-gray-700">Informasi Material</h3><p><span class="font-semibold">Deskripsi:</span> ${item.desc}</p><p><span class="font-semibold">Material Code:</span> ${item.materialCode}</p><p><span class="font-semibold">Klasifikasi:</span> ${item.details.classification}</p></div><hr><div class="grid grid-cols-2 gap-4"><div><h3 class="text-lg font-semibold text-green-700">Data Baru (Inventarisasi)</h3><div class="bg-green-50 p-3 rounded-lg mt-1"><p><span class="font-semibold">Kondisi:</span> ${item.details.condition}</p><p><span class="font-semibold">Tonase:</span> ${item.details.tonnage || '-'}</p><p><span class="font-semibold">Kuantitas:</span> ${item.details.quantity} ${item.details.uom}</p><p><span class="font-semibold">Lokasi:</span> ${item.details.location}</p></div></div><div><h3 class="text-lg font-semibold text-gray-700">Data Lama (Ref. 2021)</h3><div class="bg-gray-100 p-3 rounded-lg mt-1"><p><span class="font-semibold">Kondisi:</span> -</p><p><span class="font-semibold">Tonase:</span> -</p><p><span class="font-semibold">Kuantitas:</span> ${item.previousData.quantity} ${item.previousData.uom} <span class="text-blue-600 font-bold">(Ditemukan: ${item.previousData.foundSoFar})</span></p><p><span class="font-semibold">Lokasi:</span> ${item.previousData.location}</p></div></div></div><hr><div><h3 class="text-lg font-semibold text-gray-700">Informasi Input</h3><p><span class="font-semibold">Diinput oleh:</span> ${item.submittedBy}</p><p><span class="font-semibold">Tanggal Input:</span> ${item.date}</p></div><hr><div class="pt-4"><h3 class="text-lg font-semibold text-gray-700 mb-3">Tindakan Verifikasi</h3><div id="rejection-reason-container" class="hidden mb-4"><label for="rejection-reason" class="block text-sm font-medium text-gray-700 mb-1">Alasan Penolakan</label><textarea id="rejection-reason" rows="3" class="w-full p-2 border border-gray-300 rounded-lg" placeholder="Contoh: Foto tidak jelas, harap ambil ulang."></textarea></div><div class="flex items-center space-x-4"><button id="approve-btn" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700">Setujui</button><button id="reject-btn" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg hover:bg-red-700">Tolak</button></div></div></div></div></div></div>`;
-                }
+                'katalog-mi': () => `<div class="page-content"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-semibold text-gray-700">Manajemen Katalog MI</h2><div class="flex space-x-2"><button class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium flex items-center"><svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>Import Katalog</button><button class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium flex items-center"><svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>Tambah Katalog</button></div></div><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"><div class="bg-white rounded-lg shadow"><img src="https://placehold.co/400x300/e2e8f0/64748b?text=VALVE" alt="Katalog Aset" class="w-full h-40 object-cover rounded-t-md"><div class="p-4"><h3 class="font-semibold text-gray-800">VALVE BUTTERFLY, 16IN</h3><p class="text-sm text-gray-500">Spesifikasi: 150LB, W/GEAR, API 609</p></div><div class="p-4 border-t flex justify-end space-x-2"><button class="text-blue-600 hover:text-blue-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L16.732 3.732z"></path></svg></button><button class="text-red-600 hover:text-red-800"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button></div></div></div></div>`,
+                users: () => `<div class="page-content bg-white p-6 rounded-xl shadow-md"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-semibold text-gray-700">Manajemen User</h2><button class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium">Tambah User</button></div><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Nama</th><th class="px-6 py-3">Email</th><th class="px-6 py-3">Tipe Akun</th><th class="px-6 py-3">Status</th><th class="px-6 py-3 text-center">Aksi</th></tr></thead><tbody>
+                ${Object.entries(App.users).map(([email, user]) => `
+                    <tr class="bg-white border-b hover:bg-gray-50">
+                        <td class="px-6 py-4">${user.name}</td>
+                        <td class="px-6 py-4">${email}</td>
+                        <td class="px-6 py-4"><span class="text-xs px-2 py-1 rounded-full ${user.role === 'admin' ? 'bg-gray-200 text-gray-800' : 'bg-blue-200 text-blue-800'}">${user.role === 'admin' ? 'Admin' : 'User'}</span></td>
+                        <td class="px-6 py-4 font-semibold ${user.status === 'Nonaktif' ? 'text-red-600' : 'text-green-600'}">${user.status || 'Aktif'}</td>
+                        <td class="px-6 py-4 text-center">...</td>
+                    </tr>
+                `).join('')}
+                </tbody></table></div></div>`,
+                locations: () => `<div class="page-content"><div class="flex justify-between items-center mb-6"><h2 class="text-xl font-semibold text-gray-700">Manajemen Lokasi</h2><button class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium">Tambah Lokasi</button></div><div class="grid grid-cols-1 lg:grid-cols-3 gap-8"><div class="bg-white p-6 rounded-xl shadow-md"><h3 class="font-semibold mb-4">Gedung / Area</h3><ul class="space-y-2"><li class="bg-gray-100 p-2 rounded">Gudang A</li><li class="bg-gray-100 p-2 rounded">Gudang B</li><li class="bg-gray-100 p-2 rounded">Area Terbuka</li></ul></div><div class="bg-white p-6 rounded-xl shadow-md"><h3 class="font-semibold mb-4">Storage Location</h3><ul class="space-y-2"><li class="bg-gray-100 p-2 rounded">AN-FL-01/C</li><li class="bg-gray-100 p-2 rounded">AN-FL-02/A</li><li class="bg-gray-100 p-2 rounded">YD-SHELTER</li></ul></div><div class="bg-white p-6 rounded-xl shadow-md"><h3 class="font-semibold mb-4">Storage Bin</h3><ul class="space-y-2"><li class="bg-gray-100 p-2 rounded">Rak 1</li><li class="bg-gray-100 p-2 rounded">Palet 12</li><li class="bg-gray-100 p-2 rounded">AN PH-10</li></ul></div></div></div>`,
+                kegiatan: () => `<div class="page-content">
+                    <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-semibold">Kegiatan Inventarisasi PHE 2025</h2>
+                            <button data-action="open-kegiatan-modal" data-modal="kegiatan-modal" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium">Buat Kegiatan Baru</button>
+                        </div>
+                        <p class="text-gray-600">Periode: 01 Jan 2025 - 31 Des 2025</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-md">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">Daftar Batch</h3>
+                            <button data-action="open-batch-modal" data-modal="batch-modal" class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium">Buat Batch Baru</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Nama Batch</th><th class="px-6 py-3">Periode</th><th class="px-6 py-3">Tim Pelaksana</th><th class="px-6 py-3">Verifikator</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">Aksi</th></tr></thead><tbody><tr class="bg-white border-b"><td class="px-6 py-4">Batch 1: Gudang A & B</td><td class="px-6 py-4">01 Jul - 31 Jul</td><td class="px-6 py-4">Tim A, Tim C</td><td class="px-6 py-4">Citra Lestari</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full">Selesai</span></td><td class="px-6 py-4"><a href="#" class="text-blue-600 font-semibold">Detail</a></td></tr><tr class="bg-gray-50 border-b"><td class="px-6 py-4">Batch 2: Area Limbah</td><td class="px-6 py-4">01 Agu - 31 Agu</td><td class="px-6 py-4">Tim B</td><td class="px-6 py-4">Citra Lestari, Verifikator B</td><td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-0.5 rounded-full">Berlangsung</span></td><td class="px-6 py-4"><a href="#" class="text-blue-600 font-semibold">Detail</a></td></tr></tbody></table>
+                        </div>
+                    </div>
+                    <!-- Modal Tambah Kegiatan -->
+                    <div id="kegiatan-modal" class="modal-container fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"><div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md"><h2 class="text-2xl font-bold mb-6">Buat Kegiatan Baru</h2><form id="form-kegiatan" class="space-y-4"><div><label for="nama_kegiatan" class="block text-sm font-medium text-gray-700">Nama Kegiatan</label><input type="text" id="nama_kegiatan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required></div><div><label for="periode_kegiatan" class="block text-sm font-medium text-gray-700">Periode</label><input type="text" id="periode_kegiatan" placeholder="cth: 01 Jan 2026 - 31 Des 2026" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required></div><div><label for="deskripsi_kegiatan" class="block text-sm font-medium text-gray-700">Deskripsi</label><textarea id="deskripsi_kegiatan" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"></textarea></div><div class="flex justify-end space-x-4 pt-4"><button type="button" data-action="close-modal" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">Batal</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Simpan Kegiatan</button></div></form></div></div>
+                    <!-- Modal Tambah Batch -->
+                    <div id="batch-modal" class="modal-container fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"><div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg"><h2 class="text-2xl font-bold mb-6">Buat Batch Baru</h2><form id="form-batch" class="space-y-4"><div><label for="nama_batch" class="block text-sm font-medium text-gray-700">Nama Batch</label><input type="text" id="nama_batch" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required></div><div><label class="block text-sm font-medium text-gray-700">Tim Pelaksana (bisa lebih dari satu)</label><select multiple class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"><option>Tim A</option><option>Tim B</option><option>Tim C</option></select></div><div><label class="block text-sm font-medium text-gray-700">Verifikator (bisa lebih dari satu)</label><select multiple class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"><option>Citra Lestari</option><option>Verifikator B</option></select></div><div class="flex justify-end space-x-4 pt-4"><button type="button" data-action="close-modal" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">Batal</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Simpan Batch</button></div></form></div></div>
+                </div>`,
+                reports: () => `<div class="page-content bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold mb-2">Laporan Global</h2><p class="text-gray-600 mb-6">Rekapitulasi hasil inventarisasi dari semua batch yang telah selesai.</p><div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"><div class="bg-blue-50 p-4 rounded-lg"><h3 class="font-semibold text-blue-800">Total Selisih Nilai</h3><p class="text-2xl font-bold text-blue-600">Rp 15.250.000</p></div><div class="bg-green-50 p-4 rounded-lg"><h3 class="font-semibold text-green-800">Aset Baru Ditemukan</h3><p class="text-2xl font-bold text-green-600">12</p></div><div class="bg-red-50 p-4 rounded-lg"><h3 class="font-semibold text-red-800">Aset Tidak Ditemukan</h3><p class="text-2xl font-bold text-red-600">5</p></div></div><h3 class="text-lg font-semibold mb-4">Pilih Laporan Rinci</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"><a href="#" class="action-link block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">Laporan per Lokasi</a><a href="#" class="action-link block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">Laporan per Kondisi</a><a href="#" class="action-link block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">Laporan Aset Berlebih</a></div></div>`,
             }
         },
-    };
+        user: {
+            init() { this.renderScreen('roleSelection'); this.attachListeners(); },
+            renderScreen(screenName) {
+                document.getElementById('user-page-container').innerHTML = this.screens[screenName](App.state);
+                 // Attach specific listeners for checklist screen if it's rendered
+                if (screenName === 'petugasVerificationChecklist') {
+                    const selectAllCheckbox = document.getElementById('select-all-assets');
+                    if (selectAllCheckbox) {
+                        selectAllCheckbox.addEventListener('change', (e) => {
+                            document.querySelectorAll('.asset-checkbox').forEach(checkbox => {
+                                checkbox.checked = e.target.checked;
+                            });
+                        });
+                    }
+                }
+            },
+            attachListeners() {
+                const container = document.getElementById('user-page-container');
+                container.addEventListener('click', e => {
+                    const target = e.target.closest('[data-action]');
+                    if (!target) return;
+                    e.preventDefault();
+                    const action = target.dataset.action;
+                    if (this.actions[action]) this.actions[action](target.dataset);
+                });
+            },
+            actions: {
+                'select-role': function(dataset) {
+                    App.state.activeUserRole = dataset.role;
+                    App.user.renderScreen(dataset.role);
+                },
+                'back-to-role-selection': function() {
+                    App.state.activeUserRole = null;
+                    App.user.renderScreen('roleSelection');
+                },
+                'review-item': function(dataset) {
+                    App.state.verifikator.currentItem = App.state.verifikator.verificationList.find(i => i.id === dataset.id);
+                    App.user.renderScreen('verifikatorDetail');
+                },
+                'back-to-list': function() { App.user.renderScreen('verifikator'); },
+                'approve-item': function() { this.processVerification(true); },
+                'reject-item': function() {
+                    const reasonContainer = document.getElementById('rejection-reason-container');
+                    if (reasonContainer.classList.contains('hidden')) {
+                        reasonContainer.classList.remove('hidden');
+                    } else {
+                        const reasonText = document.getElementById('rejection-reason').value;
+                        if (reasonText) { this.processVerification(false, reasonText); }
+                        else { alert('Mohon isi alasan penolakan.'); }
+                    }
+                },
+                processVerification(isApproved, reason = '') {
+                    const item = App.state.verifikator.currentItem;
+                    let message = `Aset ${item.id} telah di-${isApproved ? 'setujui' : `kembalikan untuk penelitian ulang. Alasan: ${reason}`}.`;
+                    alert(message);
+                    App.state.verifikator.verificationList = App.state.verifikator.verificationList.filter(i => i.id !== item.id);
+                    App.user.renderScreen('verifikator');
+                },
+                'open-worksheet': function(dataset) {
+                    App.state.petugas.currentKertasKerjaId = dataset.id;
+                    App.user.renderScreen('worksheetDetail');
+                },
+                'back-to-petugas-dashboard': function() {
+                    App.state.petugas.currentKertasKerjaId = null;
+                    App.user.renderScreen('petugas');
+                },
+                'update-asset': function(dataset) {
+                    const kk = App.state.petugas.kertasKerja.find(k => k.id === App.state.petugas.currentKertasKerjaId);
+                    const asset = kk.assets.find(a => a.id === dataset.id);
+                    App.state.petugas.currentAsset = asset;
+                    App.user.renderScreen('petugasUpdateAsset');
+                },
+                'save-update': function() {
+                    alert('Data aset berhasil diupdate.');
+                    App.user.renderScreen('worksheetDetail');
+                },
+                 'input-new-asset': function() {
+                    App.user.renderScreen('petugasInputNewAsset');
+                },
+                'save-new-asset': function() {
+                     alert('Aset temuan baru berhasil disimpan.');
+                     App.user.renderScreen('worksheetDetail');
+                },
+                'show-verification-checklist': function() {
+                    App.user.renderScreen('petugasVerificationChecklist');
+                },
+                'submit-checked-for-verification': function() {
+                    const checkedCount = document.querySelectorAll('.asset-checkbox:checked').length;
+                    if (checkedCount > 0) {
+                        alert(`${checkedCount} aset berhasil diajukan untuk verifikasi.`);
+                        App.user.renderScreen('petugas');
+                    } else {
+                        alert('Pilih setidaknya satu aset untuk diajukan.');
+                    }
+                }
+            },
+            screens: {
+                roleSelection: (state) => {
+                    const roles = state.currentUser.assigned_roles;
+                    const roleCards = roles.map(role => {
+                        if(role === 'petugas') {
+                            return `<div data-action="select-role" data-role="petugas" class="bg-blue-500 text-white p-8 rounded-lg text-center cursor-pointer hover:bg-blue-600 transition-all">
+                                <h2 class="text-2xl font-bold">Petugas Lapangan</h2>
+                                <p>Lakukan pendataan aset di lapangan.</p>
+                            </div>`;
+                        }
+                        if(role === 'verifikator') {
+                             return `<div data-action="select-role" data-role="verifikator" class="bg-indigo-500 text-white p-8 rounded-lg text-center cursor-pointer hover:bg-indigo-600 transition-all">
+                                <h2 class="text-2xl font-bold">Verifikator</h2>
+                                <p>Verifikasi data yang diinput oleh petugas.</p>
+                            </div>`;
+                        }
+                        return '';
+                    }).join('');
 
-    // --- APPLICATION START ---
-    document.addEventListener('DOMContentLoaded', () => {
-        App.init();
+                    return `
+                    <div class="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+                        <div class="text-center mb-10">
+                            <h1 class="text-4xl font-bold text-gray-800">Selamat Datang, ${state.currentUser.name}</h1>
+                            <p class="text-gray-600 mt-2">Silakan pilih peran Anda untuk kegiatan saat ini.</p>
+                        </div>
+                        <div class="w-full max-w-2xl space-y-6">
+                            ${roleCards}
+                        </div>
+                         <div class="mt-10">
+                            <button data-action="logout" class="text-gray-500 hover:underline">Logout</button>
+                        </div>
+                    </div>`;
+                },
+                petugas: (state) => `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-8"><div class="flex justify-between items-center"><div><p class="text-gray-500">Selamat datang,</p><h1 class="text-2xl font-bold text-gray-800">${state.currentUser.name}</h1></div><a href="#" data-action="back-to-role-selection" class="text-sm text-blue-600 hover:underline">Ganti Peran &rarr;</a></div></header><h2 class="text-lg font-semibold mb-3">Kertas Kerja Anda</h2><div class="space-y-3">${state.petugas.kertasKerja.map(kk => `<div data-action="open-worksheet" data-id="${kk.id}" class="p-4 border rounded-lg cursor-pointer ${kk.status === 'Perlu Penelitian Ulang' ? 'bg-red-50 border-red-300' : 'bg-gray-50 hover:bg-blue-50'}"><div class="flex justify-between items-center"><p class="font-bold">${kk.batch}</p><span class="text-xs font-medium px-2 py-1 rounded-full ${kk.status === 'Perlu Penelitian Ulang' ? 'bg-red-200 text-red-800' : 'bg-yellow-200 text-yellow-800'}">${kk.status}</span></div><p class="text-sm text-gray-600">Progres: ${kk.progres}/${kk.totalAset} Aset</p>${kk.catatan ? `<p class="text-sm text-red-600 mt-1"><b>Catatan Verifikator:</b> ${kk.catatan}</p>` : ''}</div>`).join('')}</div><div class="mt-10 text-center"><button data-action="logout" class="text-gray-500 hover:underline">Logout</button></div></div></div>`,
+                worksheetDetail: (state) => {
+                    const kk = state.petugas.kertasKerja.find(k => k.id === state.petugas.currentKertasKerjaId);
+                    if (!kk) return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Kertas Kerja tidak ditemukan.</p></div>`;
+                    
+                    const assetListHTML = kk.assets.map(asset => {
+                        let statusClass = 'bg-gray-100';
+                        let statusText = 'Update';
+                        let statusTextColor = 'text-white';
+                        let buttonBg = 'bg-blue-600';
+                        if (asset.status === 'Selesai') {
+                            statusClass = 'bg-green-100';
+                            statusText = `Selesai ✓`;
+                            statusTextColor = 'text-green-700';
+                            buttonBg = '';
+                        } else if (asset.status === 'Perlu Diperiksa Ulang') {
+                            statusClass = 'bg-red-100';
+                        }
+                        
+                        return `<div class="p-3 ${statusClass} rounded-lg flex justify-between items-center">
+                            <p>${asset.desc}<br><small class="text-gray-500">Lokasi: ${asset.location}</small></p>
+                            ${asset.status !== 'Selesai' ? `<button data-action="update-asset" data-id="${asset.id}" class="${buttonBg} ${statusTextColor} px-3 py-1 rounded-lg text-sm">${statusText}</button>` : `<span class="text-sm font-semibold ${statusTextColor}">${statusText}</span>`}
+                        </div>`;
+                    }).join('');
 
-        window.addEventListener('hashchange', () => {
-            if (App.state.currentPage === 'admin') {
-                App.admin.renderContent(window.location.hash);
-            }
-        });
-        
-        document.body.addEventListener('input', e => {
-            if (e.target.matches('.otp-input')) {
-                const next = e.target.nextElementSibling;
-                if (e.target.value && next && next.matches('.otp-input')) {
-                    next.focus();
+                    return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><h1 class="text-xl font-bold text-center mt-2">${kk.batch}</h1></header><div class="flex justify-between items-center mb-4"><p class="text-sm">Progres: ${kk.progres}/${kk.totalAset}</p><button data-action="input-new-asset" class="text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold">+ Aset Temuan</button></div><div class="space-y-2">${assetListHTML}</div><button data-action="show-verification-checklist" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl text-lg mt-6">Ajukan Verifikasi</button></div></div>`;
+                },
+                petugasInputNewAsset: (state) => `
+                <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl">
+                    <div class="screen p-6">
+                        <header class="mb-6">
+                            <a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali ke Kertas Kerja</a>
+                        </header>
+                        <h1 class="text-xl font-bold mb-6">Input Aset Temuan Baru</h1>
+                        <form id="new-asset-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Scan ID Tag Baru</label>
+                                <div class="mt-1 flex rounded-md shadow-sm">
+                                    <input type="text" class="flex-1 block w-full rounded-none rounded-l-md p-2 border border-gray-300" placeholder="Pindai QR Code...">
+                                    <button type="button" class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500">
+                                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-1.036.84-1.875 1.875-1.875h4.5c1.036 0 1.875.84 1.875 1.875v4.5c0 1.036-.84 1.875-1.875 1.875h-4.5A1.875 1.875 0 013.75 9.375v-4.5zM3.75 14.625c0-1.036.84-1.875 1.875-1.875h4.5c1.036 0 1.875.84 1.875 1.875v4.5c0 1.036-.84 1.875-1.875 1.875h-4.5A1.875 1.875 0 013.75 19.125v-4.5zM13.5 4.875c0-1.036.84-1.875 1.875-1.875h4.5c1.036 0 1.875.84 1.875 1.875v4.5c0 1.036-.84 1.875-1.875 1.875h-4.5A1.875 1.875 0 0113.5 9.375v-4.5zM13.5 14.625c0-1.036.84-1.875 1.875-1.875h4.5c1.036 0 1.875.84 1.875 1.875v4.5c0 1.036-.84 1.875-1.875 1.875h-4.5A1.875 1.875 0 0113.5 19.125v-4.5z" /></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Search Material</label>
+                                <input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Cari material code atau uraian...">
+                                <p class="mt-1 text-xs text-gray-500">Jika tidak ada, isi manual di bawah.</p>
+                            </div>
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Foto Aset (bisa lebih dari satu)</label>
+                                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                    <div class="space-y-1 text-center">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                        <div class="flex text-sm text-gray-600"><p class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none"><span>Ambil Foto</span></p></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div><label class="block text-sm font-medium text-gray-700">Kondisi</label><select class="w-full mt-1 p-2 border rounded-lg"><option>Baik</option><option>Rusak Ringan</option><option>Rusak Berat</option></select></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Klasifikasi</label><select class="w-full mt-1 p-2 border rounded-lg"><option>Metal</option><option>Non Metal</option><option>B3</option></select></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Lokasi</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Gudang A / AN-FL-01/C"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Tonase (Opsional - dalam Kg)</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Contoh: 1500"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Dimensi (Opsional)</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Contoh: 100x50x20 cm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Expired Date (Opsional)</label><input type="date" class="w-full mt-1 p-2 border rounded-lg"></div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Asset Group (Opsional)</label>
+                                <select class="w-full mt-1 p-2 border rounded-lg">
+                                    <option>1. Process Equipment, and Mechanical System</option>
+                                    <option>2. Piping System</option>
+                                    <option>3. Instrument and Control System</option>
+                                    <option>4. Electrical System</option>
+                                    <option>5. Technical Safety System</option>
+                                    <option>6. Project Engineering</option>
+                                </select>
+                            </div>
+                             <div><label class="block text-sm font-medium text-gray-700">Keterangan (Opsional)</label><textarea rows="3" class="w-full mt-1 p-2 border rounded-lg" placeholder="Masukkan catatan tambahan..."></textarea></div>
+                            <button data-action="save-new-asset" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl mt-6">Simpan Data</button>
+                        </form>
+                    </div>
+                </div>`,
+                petugasUpdateAsset: (state) => {
+                    const asset = state.petugas.currentAsset;
+                    if (!asset) return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Aset tidak ditemukan.</p></div>`;
+
+                    return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl">
+                    <div class="screen p-6">
+                        <header class="mb-6">
+                            <a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali ke Kertas Kerja</a>
+                        </header>
+                        <h1 class="text-xl font-bold mb-6">Update Data Aset: ${asset.desc}</h1>
+                        <form id="update-asset-form" class="space-y-4">
+                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Foto Aset (bisa lebih dari satu)</label>
+                                <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                                    <div class="space-y-1 text-center">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                                        <div class="flex text-sm text-gray-600"><p class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none"><span>Ambil Foto</span></p></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div><label class="block text-sm font-medium text-gray-700">Kondisi</label><select class="w-full mt-1 p-2 border rounded-lg"><option>Baik</option><option>Rusak Ringan</option><option>Rusak Berat</option></select></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Klasifikasi</label><select class="w-full mt-1 p-2 border rounded-lg"><option>Metal</option><option>Non Metal</option><option>B3</option></select></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Lokasi</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" value="${asset.location}"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Tonase (Opsional - dalam Kg)</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Contoh: 1500"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Dimensi (Opsional)</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Contoh: 100x50x20 cm"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Expired Date (Opsional)</label><input type="date" class="w-full mt-1 p-2 border rounded-lg"></div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Asset Group (Opsional)</label>
+                                <select class="w-full mt-1 p-2 border rounded-lg">
+                                    <option>1. Process Equipment, and Mechanical System</option>
+                                    <option>2. Piping System</option>
+                                    <option>3. Instrument and Control System</option>
+                                    <option>4. Electrical System</option>
+                                    <option>5. Technical Safety System</option>
+                                    <option>6. Project Engineering</option>
+                                </select>
+                            </div>
+                             <div><label class="block text-sm font-medium text-gray-700">Keterangan (Opsional)</label><textarea rows="3" class="w-full mt-1 p-2 border rounded-lg" placeholder="Masukkan catatan tambahan..."></textarea></div>
+                            <button data-action="save-update" class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl mt-6">Simpan Perubahan</button>
+                        </form>
+                    </div>
+                </div>`;
+                },
+                petugasVerificationChecklist: (state) => {
+                    const kk = state.petugas.kertasKerja.find(k => k.id === state.petugas.currentKertasKerjaId);
+                    if (!kk) return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Kertas Kerja tidak ditemukan.</p></div>`;
+                    
+                    const assetsToVerify = kk.assets.filter(a => a.status !== 'Belum Diperiksa');
+                    const assetListHTML = assetsToVerify.map(asset => `
+                        <label for="asset-${asset.id}" class="flex items-center p-3 bg-white rounded-lg border hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" id="asset-${asset.id}" class="asset-checkbox h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span class="ml-3 text-sm text-gray-700">${asset.desc} <span class="text-gray-500">(${asset.status})</span></span>
+                        </label>
+                    `).join('');
+
+                    return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-6"><a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali ke Kertas Kerja</a></header><h1 class="text-xl font-bold mb-4">Ajukan Verifikasi</h1><p class="text-sm text-gray-600 mb-4">Pilih aset yang sudah selesai diperiksa untuk diajukan ke verifikator.</p><div class="space-y-3"><label for="select-all-assets" class="flex items-center p-3 bg-gray-100 rounded-lg border font-semibold cursor-pointer"><input type="checkbox" id="select-all-assets" class="h-5 w-5 rounded"><span class="ml-3">Pilih Semua</span></label>${assetListHTML}</div><button data-action="submit-checked-for-verification" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl mt-6">Ajukan Aset Terpilih</button></div></div>`;
+                },
+                verifikator: (state) => `<div class="max-w-6xl mx-auto py-8 px-4"><header class="flex justify-between items-center mb-8"><div><h1 class="text-3xl font-bold text-gray-900">Dashboard Verifikator</h1><p class="text-gray-500">Selamat datang, ${state.currentUser.name}</p></div><div class="flex items-center space-x-4"><a href="#" data-action="back-to-role-selection" class="text-sm text-blue-600 hover:underline">Ganti Peran &rarr;</a><button data-action="logout" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600">Logout</button></div></header><div class="screen"><div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Menunggu Verifikasi</h3><p class="text-3xl font-bold text-yellow-600">${state.verifikator.verificationList.length}</p></div><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Diverifikasi Hari Ini</h3><p class="text-3xl font-bold text-green-600">25</p></div><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Ditolak Hari Ini</h3><p class="text-3xl font-bold text-red-600">2</p></div></div><div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold mb-6">Daftar Aset untuk Diverifikasi</h2><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">ID Tag</th><th class="px-6 py-3">Deskripsi</th><th class="px-6 py-3">Batch</th><th class="px-6 py-3">Waktu Input</th><th class="px-6 py-3">Diinput Oleh</th><th class="px-6 py-3">Aksi</th></tr></thead><tbody>${state.verifikator.verificationList.map(item => `<tr><td class="px-6 py-4 font-medium text-gray-900">${item.id}</td><td class="px-6 py-4">${item.desc}</td><td class="px-6 py-4">${item.batch}</td><td class="px-6 py-4">${item.date}</td><td class="px-6 py-4">${item.submittedBy}</td><td class="px-6 py-4"><button data-action="review-item" data-id="${item.id}" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Periksa</button></td></tr>`).join('')}</tbody></table></div></div></div></div>`,
+                verifikatorDetail: (state) => {
+                    const item = state.verifikator.currentItem;
+                    if (!item) return `<div>Error: Item tidak ditemukan.</div>`;
+
+                    const renderDetail = (label, value) => {
+                        if (!value) return '';
+                        return `<div class="py-2 sm:grid sm:grid-cols-3 sm:gap-4"><dt class="text-sm font-medium text-gray-500">${label}</dt><dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${value}</dd></div>`;
+                    };
+                    
+                    const renderLokasiLama = (lokasi) => {
+                        if(!lokasi) return '<li>Tidak ada data</li>';
+                        return Object.entries(lokasi).map(([nama, jumlah]) => `<li>${nama}: <strong>${jumlah}</strong></li>`).join('');
+                    };
+
+                    return `<div class="max-w-6xl mx-auto py-8 px-4">
+                        <div class="mb-6"><a href="#" data-action="back-to-list" class="text-blue-600">&larr; Kembali ke Daftar</a></div>
+                        <div class="bg-white p-8 rounded-xl shadow-md">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h2 class="text-2xl font-bold mb-1">Detail Verifikasi Aset</h2>
+                                    <p class="text-gray-500">ID Tag: ${item.id}</p>
+                                </div>
+                                <span class="text-sm font-medium px-3 py-1 rounded-full bg-yellow-100 text-yellow-800">${item.status}</span>
+                            </div>
+                            
+                            <div class="grid lg:grid-cols-5 gap-8 mt-6">
+                                <div class="lg:col-span-3">
+                                    <h3 class="text-lg font-semibold mb-4 border-b pb-2">Data Baru (Hasil Inventarisasi)</h3>
+                                    <dl class="divide-y divide-gray-200">
+                                        ${renderDetail('Material Code', item.materialCode || '-')}
+                                        ${renderDetail('Uraian', item.desc)}
+                                        ${renderDetail('Klasifikasi', item.details.klasifikasi)}
+                                        ${renderDetail('Kondisi', item.details.kondisi)}
+                                        ${renderDetail('Lokasi Baru', item.details.lokasi)}
+                                        ${renderDetail('Tonase', item.details.tonase ? `${item.details.tonase} kg` : '-')}
+                                        ${renderDetail('Dimensi', item.details.dimensi || '-')}
+                                        ${renderDetail('Expired Date', item.details.expiredDate || '-')}
+                                        ${renderDetail('Asset Group', item.details.assetGroup || '-')}
+                                        ${renderDetail('Keterangan', item.details.keterangan || '-')}
+                                    </dl>
+
+                                    <h3 class="text-lg font-semibold mt-6 mb-4 border-b pb-2">Data Lama (Master)</h3>
+                                    ${item.previousData ? `
+                                    <dl class="divide-y divide-gray-200">
+                                        <div class="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                                            <dt class="text-sm font-medium text-gray-500">Qty Total</dt>
+                                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">${item.previousData.qtyTotal}</dd>
+                                        </div>
+                                        <div class="py-2 sm:grid sm:grid-cols-3 sm:gap-4">
+                                            <dt class="text-sm font-medium text-gray-500">Jumlah per Lokasi</dt>
+                                            <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                                                <ul class="list-disc pl-5">${renderLokasiLama(item.previousData.lokasi)}</ul>
+                                            </dd>
+                                        </div>
+                                    </dl>
+                                    ` : `<div class="bg-blue-50 text-blue-700 p-4 rounded-lg text-sm">Aset ini merupakan temuan baru dan tidak ada pada data lama.</div>`}
+                                </div>
+                                <div class="lg:col-span-2">
+                                     <h3 class="text-lg font-semibold mb-4 border-b pb-2">Foto Aset</h3>
+                                     <div class="space-y-4">
+                                        ${item.photos.map(p => `<img src="${p}" alt="Foto Aset" class="w-full rounded-lg shadow-md">`).join('')}
+                                     </div>
+                                      <div class="pt-6 mt-6 border-t">
+                                        <h3 class="text-lg font-semibold mb-3">Tindakan</h3>
+                                        <div id="rejection-reason-container" class="hidden mb-4">
+                                            <label for="rejection-reason" class="block text-sm font-medium mb-1">Alasan Penolakan (untuk Penelitian Ulang)</label>
+                                            <textarea id="rejection-reason" rows="3" class="w-full p-2 border rounded-lg" placeholder="Contoh: Foto tidak jelas, harap ambil ulang."></textarea>
+                                        </div>
+                                        <div class="flex space-x-4"><button data-action="approve-item" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg">Setujui</button><button data-action="reject-item" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg">Tolak (Penelitian Ulang)</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
                 }
             }
-        });
-    });
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => App.init());
     </script>
 </body>
 </html>
