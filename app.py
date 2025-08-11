@@ -4,17 +4,6 @@ import streamlit.components.v1 as components
 # --- Konfigurasi halaman agar menggunakan layout lebar ---
 st.set_page_config(layout="wide")
 
-# --- CSS untuk menghapus padding di sekitar komponen HTML ---
-st.markdown(
-    """
-    <style>
-        .block-container {
-            padding: 0 !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
 
 # --- Memuat dan menampilkan file HTML ---
 try:
