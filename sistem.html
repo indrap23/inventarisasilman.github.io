@@ -9,22 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        html, body {
-            height: 100%;
-            width: 100%;
-            margin: 0;
-            padding: 0;
-            overflow-x: hidden;
-        }
-        #app-wrapper {
-            position: relative;
-            height: 100%;
-            width: 100%;
-        }
-        #app-container {
-            height: 100%;
-            width: 100%;
-        }
         body {
             font-family: 'Inter', sans-serif;
             -webkit-tap-highlight-color: transparent;
@@ -54,35 +38,11 @@
 </head>
 <body class="bg-gray-100">
 
-    <div id="app-wrapper">
-        <!-- Tombol Fullscreen ditambahkan di sini -->
-        <button id="fullscreen-btn" style="position: fixed; top: 1rem; right: 1rem; z-index: 9999;" class="bg-gray-800 text-white p-2 rounded-full shadow-lg hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1v4m0 0h-4m4 0l-5-5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 0h-4m4 0l-5 5" />
-            </svg>
-        </button>
-
-        <div id="app-container">
-            <!-- Konten Aplikasi akan dirender oleh JavaScript di sini -->
-        </div>
+    <div id="app-container">
+        <!-- Konten Aplikasi akan dirender oleh JavaScript di sini -->
     </div>
 
     <script>
-    // --- FUNGSI FULLSCREEN ---
-    const fullscreenBtn = document.getElementById('fullscreen-btn');
-    const appWrapper = document.getElementById('app-wrapper');
-
-    fullscreenBtn.addEventListener('click', () => {
-        if (document.fullscreenElement) {
-            document.exitFullscreen();
-        } else {
-            // Meminta fullscreen untuk elemen pembungkus, bukan seluruh dokumen
-            appWrapper.requestFullscreen().catch(err => {
-                alert(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
-            });
-        }
-    });
-
     const App = {
         // --- DATABASE PENGGUNA (SIMULASI) ---
         users: {
@@ -143,6 +103,8 @@
                         details: { 
                             klasifikasi: 'Metal', 
                             kondisi: 'Baik', 
+                            kuantitas: '1',
+                            satuan: 'EA',
                             tonase: '50', 
                             dimensi: '40x40x30 cm',
                             expiredDate: '2030-12-31',
@@ -167,6 +129,8 @@
                         details: { 
                             klasifikasi: 'Metal', 
                             kondisi: 'Rusak Berat', 
+                            kuantitas: '1',
+                            satuan: 'EA',
                             tonase: '1200', 
                             dimensi: '',
                             expiredDate: '',
@@ -191,6 +155,8 @@
                         details: { 
                             klasifikasi: 'Metal', 
                             kondisi: 'Rusak Ringan', 
+                            kuantitas: '1',
+                            satuan: 'Unit',
                             tonase: '250', 
                             dimensi: '120x80x100 cm',
                             expiredDate: '',
@@ -209,8 +175,8 @@
             login(state) {
                 return `
                 <div class="page flex items-center justify-center min-h-screen">
-                    <div class="w-full p-4">
-                        <div class="bg-white rounded-xl shadow-lg p-8 max-w-md mx-auto">
+                    <div class="w-full max-w-md mx-auto p-4">
+                        <div class="bg-white rounded-xl shadow-lg p-8">
                             <div class="text-center mb-8">
                                 <div class="inline-block bg-gray-200 p-3 rounded-full mb-4">
                                     <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
@@ -309,6 +275,8 @@
                 { code: '5200036825', desc: 'PLATE - STEEL,1/8IN X 4 X 8 FT, MATL CS', qty: 0, unit: 'EA', location: 'YD-SHELTER' }
             ],
 
+            teamCounter: 0, // Counter for unique team IDs
+
             init() { this.renderContent(window.location.hash || '#dashboard'); this.attachAdminListeners(); },
             renderContent(hash) {
                 const container = document.getElementById('admin-main-content');
@@ -325,35 +293,122 @@
                 }
             },
             attachAdminListeners() {
+                // Using a single body listener to handle dynamic content
                 document.body.addEventListener('click', e => {
+                    // For nav links
                     const navLink = e.target.closest('.nav-link, .action-link');
-                    if (navLink) { e.preventDefault(); const hash = navLink.getAttribute('href'); window.location.hash = hash; this.renderContent(hash); }
+                    if (navLink && document.getElementById('admin-main-content')) { 
+                        e.preventDefault(); 
+                        const hash = navLink.getAttribute('href'); 
+                        window.location.hash = hash; 
+                        this.renderContent(hash); 
+                    }
                     
+                    // For other data-actions
                     const actionTarget = e.target.closest('[data-action]');
                     if (actionTarget) {
                         const action = actionTarget.dataset.action;
                         if(action === 'open-kegiatan-modal' || action === 'open-batch-modal') {
                             document.getElementById(actionTarget.dataset.modal).classList.remove('hidden');
+                             if(action === 'open-batch-modal') {
+                                document.getElementById('teams-container').innerHTML = ''; // Clear previous teams
+                                this.teamCounter = 0; // Reset counter
+                                this.addTeam(); // Add the first team automatically
+                             }
                         }
                         if(action === 'close-modal') {
                             actionTarget.closest('.modal-container').classList.add('hidden');
                         }
                     }
-                });
-                document.body.addEventListener('submit', e => {
-                    if(e.target.id === 'form-kegiatan' || e.target.id === 'form-batch') {
-                        e.preventDefault();
-                        alert('Data baru berhasil disimpan!');
-                        e.target.closest('.modal-container').classList.add('hidden');
+
+                    // Specific listener for adding a team
+                    if (e.target.id === 'add-team-btn') {
+                        this.addTeam();
+                    }
+
+                    // Specific listener for removing a team
+                    if (e.target.closest('.remove-team-btn')) {
+                        e.target.closest('.team-card').remove();
                     }
                 });
+
+                document.body.addEventListener('submit', e => {
+                    if(e.target.id === 'form-kegiatan') {
+                        e.preventDefault();
+                        alert('Data kegiatan baru berhasil disimpan!');
+                        e.target.closest('.modal-container').classList.add('hidden');
+                    }
+                     if(e.target.id === 'form-batch') {
+                         e.preventDefault();
+                         const batchName = document.getElementById('nama_batch').value;
+                         const teams = [];
+                         document.querySelectorAll('.team-card').forEach(card => {
+                             const teamId = card.dataset.teamId;
+                             const members = Array.from(card.querySelector('.team-members-select').selectedOptions).map(opt => opt.value);
+                             const verifier = card.querySelector('.team-verifier-select').value;
+                             teams.push({ teamId, members, verifier });
+                         });
+                         
+                         console.log('Batch Saved:', { batchName, teams });
+                         alert('Data batch dan tim berhasil disimpan! Cek console log untuk detail.');
+                         e.target.closest('.modal-container').classList.add('hidden');
+                     }
+                });
             },
+
+            // --- HELPER METHODS FOR TEAM MANAGEMENT ---
+            getUsersByRole(role) {
+                return Object.entries(App.users)
+                    .filter(([email, user]) => user.assigned_roles && user.assigned_roles.includes(role))
+                    .map(([email, user]) => ({ email, name: user.name }));
+            },
+
+            createTeamCardHTML(teamId, petugasOptionsHTML, verifikatorOptionsHTML) {
+                return `
+                <div class="team-card border rounded-lg p-4 bg-white shadow-sm" data-team-id="${teamId}">
+                    <div class="flex justify-between items-center mb-3">
+                        <h4 class="font-semibold text-gray-800">Tim ${teamId}</h4>
+                        <button type="button" class="remove-team-btn text-red-500 hover:text-red-700 text-xl font-bold leading-none" title="Hapus Tim">&times;</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Anggota Tim (Petugas)</label>
+                            <select multiple class="team-members-select mt-1 block w-full border border-gray-300 rounded-md shadow-sm h-32 p-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                ${petugasOptionsHTML}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Verifikator Tim</label>
+                            <select class="team-verifier-select mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">-- Pilih Verifikator --</option>
+                                ${verifikatorOptionsHTML}
+                            </select>
+                        </div>
+                    </div>
+                </div>`;
+            },
+
+            addTeam() {
+                this.teamCounter++;
+                const petugas = this.getUsersByRole('petugas');
+                const verifikator = this.getUsersByRole('verifikator');
+
+                const petugasOptions = petugas.map(p => `<option value="${p.email}">${p.name}</option>`).join('');
+                const verifikatorOptions = verifikator.map(v => `<option value="${v.email}">${v.name}</option>`).join('');
+
+                const teamCardHTML = this.createTeamCardHTML(this.teamCounter, petugasOptions, verifikatorOptions);
+                const placeholder = document.getElementById('no-teams-placeholder');
+                if(placeholder) placeholder.style.display = 'none';
+                document.getElementById('teams-container').insertAdjacentHTML('beforeend', teamCardHTML);
+            },
+
+
             pageTitles: {
                 'dashboard': 'Dashboard', 'master-mi': 'Manajemen Master MI', 'katalog-mi': 'Manajemen Katalog MI',
                 'users': 'Manajemen User', 'locations': 'Manajemen Lokasi', 'kegiatan': 'Kegiatan & Batch', 'reports': 'Laporan',
             },
             contentTemplates: {
-                dashboard: () => `<div class="page-content"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total Aset di Master</h3><p class="text-3xl font-bold text-gray-800">${App.admin.masterAsetData.length}</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total Kegiatan</h3><p class="text-3xl font-bold text-yellow-600">1</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total User Aktif</h3><p class="text-3xl font-bold text-blue-600">4</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Aset Belum Diverifikasi</h3><p class="text-3xl font-bold text-red-600">0</p></div></div></div>`,
+                dashboard: () => `<div class="page-content"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total Aset di Master</h3><p class="text-3xl font-bold text-gray-800">${App.admin.masterAsetData.length}</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total Kegiatan</h3><p class="text-3xl font-bold text-yellow-600">1</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Total User Aktif</h3><p class="text-3xl font-bold text-blue-600">4</p></div><div class="bg-white border p-5 rounded-xl shadow-sm"><h3 class="font-semibold text-gray-500">Aset Belum Diverifikasi</h3><p class="text-3xl font-bold text-red-600">${App.state.verifikator.verificationList.length}</p></div></div></div>`,
                 'master-mi': () => {
                     const tableRows = App.admin.masterAsetData.map(item => `
                         <tr class="bg-white border-b hover:bg-gray-50">
@@ -398,13 +453,39 @@
                             <button data-action="open-batch-modal" data-modal="batch-modal" class="bg-green-600 text-white px-4 py-2 rounded-lg font-medium">Buat Batch Baru</button>
                         </div>
                         <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Nama Batch</th><th class="px-6 py-3">Periode</th><th class="px-6 py-3">Tim Pelaksana</th><th class="px-6 py-3">Verifikator</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">Aksi</th></tr></thead><tbody><tr class="bg-white border-b"><td class="px-6 py-4">Batch 1: Gudang A & B</td><td class="px-6 py-4">01 Jul - 31 Jul</td><td class="px-6 py-4">Tim A, Tim C</td><td class="px-6 py-4">Citra Lestari</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full">Selesai</span></td><td class="px-6 py-4"><a href="#" class="text-blue-600 font-semibold">Detail</a></td></tr><tr class="bg-gray-50 border-b"><td class="px-6 py-4">Batch 2: Area Limbah</td><td class="px-6 py-4">01 Agu - 31 Agu</td><td class="px-6 py-4">Tim B</td><td class="px-6 py-4">Citra Lestari, Verifikator B</td><td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-0.5 rounded-full">Berlangsung</span></td><td class="px-6 py-4"><a href="#" class="text-blue-600 font-semibold">Detail</a></td></tr></tbody></table>
+                            <table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">Nama Batch</th><th class="px-6 py-3">Periode</th><th class="px-6 py-3 text-center">Jumlah Tim</th><th class="px-6 py-3">Verifikator</th><th class="px-6 py-3">Status</th><th class="px-6 py-3">Aksi</th></tr></thead><tbody><tr class="bg-white border-b"><td class="px-6 py-4">Batch 1: Gudang A & B</td><td class="px-6 py-4">01 Jul - 31 Jul</td><td class="px-6 py-4 text-center">2</td><td class="px-6 py-4">Citra Lestari</td><td class="px-6 py-4"><span class="bg-green-100 text-green-800 text-xs px-2.5 py-0.5 rounded-full">Selesai</span></td><td class="px-6 py-4"><a href="#" class="text-blue-600 font-semibold">Detail</a></td></tr><tr class="bg-gray-50 border-b"><td class="px-6 py-4">Batch 2: Area Limbah</td><td class="px-6 py-4">01 Agu - 31 Agu</td><td class="px-6 py-4 text-center">1</td><td class="px-6 py-4">Citra Lestari, Budi S.</td><td class="px-6 py-4"><span class="bg-yellow-100 text-yellow-800 text-xs px-2.5 py-0.5 rounded-full">Berlangsung</span></td><td class="px-6 py-4"><a href="#" class="text-blue-600 font-semibold">Detail</a></td></tr></tbody></table>
                         </div>
                     </div>
                     <!-- Modal Tambah Kegiatan -->
                     <div id="kegiatan-modal" class="modal-container fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"><div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-md"><h2 class="text-2xl font-bold mb-6">Buat Kegiatan Baru</h2><form id="form-kegiatan" class="space-y-4"><div><label for="nama_kegiatan" class="block text-sm font-medium text-gray-700">Nama Kegiatan</label><input type="text" id="nama_kegiatan" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required></div><div><label for="periode_kegiatan" class="block text-sm font-medium text-gray-700">Periode</label><input type="text" id="periode_kegiatan" placeholder="cth: 01 Jan 2026 - 31 Des 2026" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required></div><div><label for="deskripsi_kegiatan" class="block text-sm font-medium text-gray-700">Deskripsi</label><textarea id="deskripsi_kegiatan" rows="3" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"></textarea></div><div class="flex justify-end space-x-4 pt-4"><button type="button" data-action="close-modal" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">Batal</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Simpan Kegiatan</button></div></form></div></div>
-                    <!-- Modal Tambah Batch -->
-                    <div id="batch-modal" class="modal-container fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"><div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-lg"><h2 class="text-2xl font-bold mb-6">Buat Batch Baru</h2><form id="form-batch" class="space-y-4"><div><label for="nama_batch" class="block text-sm font-medium text-gray-700">Nama Batch</label><input type="text" id="nama_batch" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required></div><div><label class="block text-sm font-medium text-gray-700">Tim Pelaksana (bisa lebih dari satu)</label><select multiple class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"><option>Tim A</option><option>Tim B</option><option>Tim C</option></select></div><div><label class="block text-sm font-medium text-gray-700">Verifikator (bisa lebih dari satu)</label><select multiple class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"><option>Citra Lestari</option><option>Verifikator B</option></select></div><div class="flex justify-end space-x-4 pt-4"><button type="button" data-action="close-modal" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg">Batal</button><button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Simpan Batch</button></div></form></div></div>
+                    <!-- Modal Tambah Batch & Tim -->
+                    <div id="batch-modal" class="modal-container fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                        <div class="bg-white rounded-lg shadow-xl p-8 w-full max-w-3xl transform transition-all">
+                            <h2 class="text-2xl font-bold mb-6">Buat Batch Baru & Atur Tim</h2>
+                            <form id="form-batch" class="space-y-4">
+                                <div>
+                                    <label for="nama_batch" class="block text-sm font-medium text-gray-700">Nama Batch</label>
+                                    <input type="text" id="nama_batch" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" required placeholder="Contoh: Batch 3: Area Terbuka">
+                                </div>
+                                <hr class="my-6">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-lg font-semibold text-gray-700">Tim Pelaksana</h3>
+                                    <button type="button" id="add-team-btn" class="bg-indigo-500 text-white px-3 py-1.5 rounded-md text-sm font-medium hover:bg-indigo-600 flex items-center space-x-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                                        <span>Tambah Tim</span>
+                                    </button>
+                                </div>
+                                <div id="teams-container" class="space-y-4 max-h-[40vh] overflow-y-auto p-2 bg-gray-50 rounded-lg border">
+                                    <!-- Team cards will be injected here by JS -->
+                                    <p id="no-teams-placeholder" class="text-center text-gray-500 py-8">Belum ada tim yang ditambahkan.</p>
+                                </div>
+                                <div class="flex justify-end space-x-4 pt-6">
+                                    <button type="button" data-action="close-modal" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300">Batal</button>
+                                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Simpan Batch</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>`,
                 reports: () => `<div class="page-content bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold mb-2">Laporan Global</h2><p class="text-gray-600 mb-6">Rekapitulasi hasil inventarisasi dari semua batch yang telah selesai.</p><div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"><div class="bg-blue-50 p-4 rounded-lg"><h3 class="font-semibold text-blue-800">Total Selisih Nilai</h3><p class="text-2xl font-bold text-blue-600">Rp 15.250.000</p></div><div class="bg-green-50 p-4 rounded-lg"><h3 class="font-semibold text-green-800">Aset Baru Ditemukan</h3><p class="text-2xl font-bold text-green-600">12</p></div><div class="bg-red-50 p-4 rounded-lg"><h3 class="font-semibold text-red-800">Aset Tidak Ditemukan</h3><p class="text-2xl font-bold text-red-600">5</p></div></div><h3 class="text-lg font-semibold mb-4">Pilih Laporan Rinci</h3><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"><a href="#" class="action-link block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">Laporan per Lokasi</a><a href="#" class="action-link block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">Laporan per Kondisi</a><a href="#" class="action-link block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg">Laporan Aset Berlebih</a></div></div>`,
             }
@@ -434,6 +515,22 @@
                     const action = target.dataset.action;
                     if (this.actions[action]) this.actions[action](target.dataset);
                 });
+            },
+            filterAssets() {
+                const input = document.getElementById('asset-search');
+                const filter = input.value.toUpperCase();
+                const listContainer = document.getElementById('asset-list-container');
+                const items = listContainer.getElementsByClassName('asset-item');
+
+                for (let i = 0; i < items.length; i++) {
+                    const p = items[i].getElementsByTagName("p")[0];
+                    const txtValue = p.textContent || p.innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        items[i].style.display = "flex";
+                    } else {
+                        items[i].style.display = "none";
+                    }
+                }
             },
             actions: {
                 'select-role': function(dataset) {
@@ -523,27 +620,25 @@
                         }
                         return '';
                     }).join('');
-                    // Perubahan: Menghapus max-w-2xl
+
                     return `
                     <div class="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
                         <div class="text-center mb-10">
                             <h1 class="text-4xl font-bold text-gray-800">Selamat Datang, ${state.currentUser.name}</h1>
                             <p class="text-gray-600 mt-2">Silakan pilih peran Anda untuk kegiatan saat ini.</p>
                         </div>
-                        <div class="w-full space-y-6">
+                        <div class="w-full max-w-2xl space-y-6">
                             ${roleCards}
                         </div>
                          <div class="mt-10">
-                            <button data-action="logout" class="text-gray-500 hover:underline">Logout</button>
-                        </div>
+                             <button data-action="logout" class="text-gray-500 hover:underline">Logout</button>
+                         </div>
                     </div>`;
                 },
-                // Perubahan: Menghapus max-w-md dan mx-auto
-                petugas: (state) => `<div class="bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-8"><div class="flex justify-between items-center"><div><p class="text-gray-500">Selamat datang,</p><h1 class="text-2xl font-bold text-gray-800">${state.currentUser.name}</h1></div><a href="#" data-action="back-to-role-selection" class="text-sm text-blue-600 hover:underline">Ganti Peran &rarr;</a></div></header><h2 class="text-lg font-semibold mb-3">Kertas Kerja Anda</h2><div class="space-y-3">${state.petugas.kertasKerja.map(kk => `<div data-action="open-worksheet" data-id="${kk.id}" class="p-4 border rounded-lg cursor-pointer ${kk.status === 'Perlu Penelitian Ulang' ? 'bg-red-50 border-red-300' : 'bg-gray-50 hover:bg-blue-50'}"><div class="flex justify-between items-center"><p class="font-bold">${kk.batch}</p><span class="text-xs font-medium px-2 py-1 rounded-full ${kk.status === 'Perlu Penelitian Ulang' ? 'bg-red-200 text-red-800' : 'bg-yellow-200 text-yellow-800'}">${kk.status}</span></div><p class="text-sm text-gray-600">Progres: ${kk.progres}/${kk.totalAset} Aset</p>${kk.catatan ? `<p class="text-sm text-red-600 mt-1"><b>Catatan Verifikator:</b> ${kk.catatan}</p>` : ''}</div>`).join('')}</div><div class="mt-10 text-center"><button data-action="logout" class="text-gray-500 hover:underline">Logout</button></div></div></div>`,
+                petugas: (state) => `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-8"><div class="flex justify-between items-center"><div><p class="text-gray-500">Selamat datang,</p><h1 class="text-2xl font-bold text-gray-800">${state.currentUser.name}</h1></div><a href="#" data-action="back-to-role-selection" class="text-sm text-blue-600 hover:underline">Ganti Peran &rarr;</a></div></header><h2 class="text-lg font-semibold mb-3">Kertas Kerja Anda</h2><div class="space-y-3">${state.petugas.kertasKerja.map(kk => `<div data-action="open-worksheet" data-id="${kk.id}" class="p-4 border rounded-lg cursor-pointer ${kk.status === 'Perlu Penelitian Ulang' ? 'bg-red-50 border-red-300' : 'bg-gray-50 hover:bg-blue-50'}"><div class="flex justify-between items-center"><p class="font-bold">${kk.batch}</p><span class="text-xs font-medium px-2 py-1 rounded-full ${kk.status === 'Perlu Penelitian Ulang' ? 'bg-red-200 text-red-800' : 'bg-yellow-200 text-yellow-800'}">${kk.status}</span></div><p class="text-sm text-gray-600">Progres: ${kk.progres}/${kk.totalAset} Aset</p>${kk.catatan ? `<p class="text-sm text-red-600 mt-1"><b>Catatan Verifikator:</b> ${kk.catatan}</p>` : ''}</div>`).join('')}</div><div class="mt-10 text-center"><button data-action="logout" class="text-gray-500 hover:underline">Logout</button></div></div></div>`,
                 worksheetDetail: (state) => {
                     const kk = state.petugas.kertasKerja.find(k => k.id === state.petugas.currentKertasKerjaId);
-                    // Perubahan: Menghapus max-w-md dan mx-auto
-                    if (!kk) return `<div class="bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Kertas Kerja tidak ditemukan.</p></div>`;
+                    if (!kk) return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Kertas Kerja tidak ditemukan.</p></div>`;
                     
                     const assetListHTML = kk.assets.map(asset => {
                         let statusClass = 'bg-gray-100';
@@ -559,17 +654,20 @@
                             statusClass = 'bg-red-100';
                         }
                         
-                        return `<div class="p-3 ${statusClass} rounded-lg flex justify-between items-center">
+                        return `<div class="asset-item p-3 ${statusClass} rounded-lg flex justify-between items-center">
                             <p>${asset.desc}<br><small class="text-gray-500">Lokasi: ${asset.location}</small></p>
                             ${asset.status !== 'Selesai' ? `<button data-action="update-asset" data-id="${asset.id}" class="${buttonBg} ${statusTextColor} px-3 py-1 rounded-lg text-sm">${statusText}</button>` : `<span class="text-sm font-semibold ${statusTextColor}">${statusText}</span>`}
                         </div>`;
                     }).join('');
-                    // Perubahan: Menghapus max-w-md dan mx-auto
-                    return `<div class="bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><h1 class="text-xl font-bold text-center mt-2">${kk.batch}</h1></header><div class="flex justify-between items-center mb-4"><p class="text-sm">Progres: ${kk.progres}/${kk.totalAset}</p><button data-action="input-new-asset" class="text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold">+ Aset Temuan</button></div><div class="space-y-2">${assetListHTML}</div><button data-action="show-verification-checklist" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl text-lg mt-6">Ajukan Verifikasi</button></div></div>`;
+
+                    return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><h1 class="text-xl font-bold text-center mt-2">${kk.batch}</h1></header><div class="flex justify-between items-center mb-4"><p class="text-sm">Progres: ${kk.progres}/${kk.totalAset}</p><button data-action="input-new-asset" class="text-sm bg-green-100 text-green-800 px-3 py-1 rounded-full font-semibold">+ Aset Temuan</button></div>
+                    <div class="my-4">
+                        <input type="text" id="asset-search" onkeyup="App.user.filterAssets()" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Cari nama aset...">
+                    </div>
+                    <div id="asset-list-container" class="space-y-2">${assetListHTML}</div><button data-action="show-verification-checklist" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl text-lg mt-6">Ajukan Verifikasi</button></div></div>`;
                 },
-                // Perubahan: Menghapus max-w-md dan mx-auto
                 petugasInputNewAsset: (state) => `
-                <div class="bg-white min-h-screen shadow-2xl">
+                <div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl">
                     <div class="screen p-6">
                         <header class="mb-6">
                             <a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali ke Kertas Kerja</a>
@@ -599,10 +697,14 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-sm font-medium text-gray-700">Kuantitas</label><input type="number" class="w-full mt-1 p-2 border rounded-lg" value="1"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Satuan</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="EA"></div>
+                            </div>
                             <div><label class="block text-sm font-medium text-gray-700">Kondisi</label><select class="w-full mt-1 p-2 border rounded-lg"><option>Baik</option><option>Rusak Ringan</option><option>Rusak Berat</option></select></div>
                             <div><label class="block text-sm font-medium text-gray-700">Klasifikasi</label><select class="w-full mt-1 p-2 border rounded-lg"><option>Metal</option><option>Non Metal</option><option>B3</option></select></div>
                             <div><label class="block text-sm font-medium text-gray-700">Lokasi</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Gudang A / AN-FL-01/C"></div>
-                            <div><label class="block text-sm font-medium text-gray-700">Tonase (Opsional - dalam Kg)</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Contoh: 1500"></div>
+                            <div><label class="block text-sm font-medium text-gray-700">Berat (Opsional - dalam Kg)</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Contoh: 1500"></div>
                             <div><label class="block text-sm font-medium text-gray-700">Dimensi (Opsional)</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="Contoh: 100x50x20 cm"></div>
                             <div><label class="block text-sm font-medium text-gray-700">Expired Date (Opsional)</label><input type="date" class="w-full mt-1 p-2 border rounded-lg"></div>
                             <div>
@@ -623,10 +725,9 @@
                 </div>`,
                 petugasUpdateAsset: (state) => {
                     const asset = state.petugas.currentAsset;
-                    // Perubahan: Menghapus max-w-md dan mx-auto
-                    if (!asset) return `<div class="bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Aset tidak ditemukan.</p></div>`;
-                    // Perubahan: Menghapus max-w-md dan mx-auto
-                    return `<div class="bg-white min-h-screen shadow-2xl">
+                    if (!asset) return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Aset tidak ditemukan.</p></div>`;
+
+                    return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl">
                     <div class="screen p-6">
                         <header class="mb-6">
                             <a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali ke Kertas Kerja</a>
@@ -641,6 +742,10 @@
                                         <div class="flex text-sm text-gray-600"><p class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none"><span>Ambil Foto</span></p></div>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="block text-sm font-medium text-gray-700">Kuantitas</label><input type="number" class="w-full mt-1 p-2 border rounded-lg" value="1"></div>
+                                <div><label class="block text-sm font-medium text-gray-700">Satuan</label><input type="text" class="w-full mt-1 p-2 border rounded-lg" placeholder="EA"></div>
                             </div>
                             <div><label class="block text-sm font-medium text-gray-700">Kondisi</label><select class="w-full mt-1 p-2 border rounded-lg"><option>Baik</option><option>Rusak Ringan</option><option>Rusak Berat</option></select></div>
                             <div><label class="block text-sm font-medium text-gray-700">Klasifikasi</label><select class="w-full mt-1 p-2 border rounded-lg"><option>Metal</option><option>Non Metal</option><option>B3</option></select></div>
@@ -667,8 +772,7 @@
                 },
                 petugasVerificationChecklist: (state) => {
                     const kk = state.petugas.kertasKerja.find(k => k.id === state.petugas.currentKertasKerjaId);
-                    // Perubahan: Menghapus max-w-md dan mx-auto
-                    if (!kk) return `<div class="bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Kertas Kerja tidak ditemukan.</p></div>`;
+                    if (!kk) return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl p-6"><a href="#" data-action="back-to-petugas-dashboard" class="text-blue-600">&larr; Kembali</a><p class="text-center text-red-500 mt-8">Kertas Kerja tidak ditemukan.</p></div>`;
                     
                     const assetsToVerify = kk.assets.filter(a => a.status !== 'Belum Diperiksa');
                     const assetListHTML = assetsToVerify.map(asset => `
@@ -677,11 +781,10 @@
                             <span class="ml-3 text-sm text-gray-700">${asset.desc} <span class="text-gray-500">(${asset.status})</span></span>
                         </label>
                     `).join('');
-                    // Perubahan: Menghapus max-w-md dan mx-auto
-                    return `<div class="bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-6"><a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali ke Kertas Kerja</a></header><h1 class="text-xl font-bold mb-4">Ajukan Verifikasi</h1><p class="text-sm text-gray-600 mb-4">Pilih aset yang sudah selesai diperiksa untuk diajukan ke verifikator.</p><div class="space-y-3"><label for="select-all-assets" class="flex items-center p-3 bg-gray-100 rounded-lg border font-semibold cursor-pointer"><input type="checkbox" id="select-all-assets" class="h-5 w-5 rounded"><span class="ml-3">Pilih Semua</span></label>${assetListHTML}</div><button data-action="submit-checked-for-verification" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl mt-6">Ajukan Aset Terpilih</button></div></div>`;
+
+                    return `<div class="max-w-md mx-auto bg-white min-h-screen shadow-2xl"><div class="screen p-6"><header class="mb-6"><a href="#" data-action="open-worksheet" data-id="${state.petugas.currentKertasKerjaId}" class="text-blue-600">&larr; Kembali ke Kertas Kerja</a></header><h1 class="text-xl font-bold mb-4">Ajukan Verifikasi</h1><p class="text-sm text-gray-600 mb-4">Pilih aset yang sudah selesai diperiksa untuk diajukan ke verifikator.</p><div class="space-y-3"><label for="select-all-assets" class="flex items-center p-3 bg-gray-100 rounded-lg border font-semibold cursor-pointer"><input type="checkbox" id="select-all-assets" class="h-5 w-5 rounded"><span class="ml-3">Pilih Semua</span></label>${assetListHTML}</div><button data-action="submit-checked-for-verification" class="w-full bg-green-600 text-white font-bold py-4 rounded-xl mt-6">Ajukan Aset Terpilih</button></div></div>`;
                 },
-                // Perubahan: Menghapus max-w-6xl dan mx-auto
-                verifikator: (state) => `<div class="py-8 px-4"><header class="flex justify-between items-center mb-8"><div><h1 class="text-3xl font-bold text-gray-900">Dashboard Verifikator</h1><p class="text-gray-500">Selamat datang, ${state.currentUser.name}</p></div><div class="flex items-center space-x-4"><a href="#" data-action="back-to-role-selection" class="text-sm text-blue-600 hover:underline">Ganti Peran &rarr;</a><button data-action="logout" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600">Logout</button></div></header><div class="screen"><div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Menunggu Verifikasi</h3><p class="text-3xl font-bold text-yellow-600">${state.verifikator.verificationList.length}</p></div><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Diverifikasi Hari Ini</h3><p class="text-3xl font-bold text-green-600">25</p></div><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Ditolak Hari Ini</h3><p class="text-3xl font-bold text-red-600">2</p></div></div><div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold mb-6">Daftar Aset untuk Diverifikasi</h2><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">ID Tag</th><th class="px-6 py-3">Deskripsi</th><th class="px-6 py-3">Batch</th><th class="px-6 py-3">Waktu Input</th><th class="px-6 py-3">Diinput Oleh</th><th class="px-6 py-3">Aksi</th></tr></thead><tbody>${state.verifikator.verificationList.map(item => `<tr><td class="px-6 py-4 font-medium text-gray-900">${item.id}</td><td class="px-6 py-4">${item.desc}</td><td class="px-6 py-4">${item.batch}</td><td class="px-6 py-4">${item.date}</td><td class="px-6 py-4">${item.submittedBy}</td><td class="px-6 py-4"><button data-action="review-item" data-id="${item.id}" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Periksa</button></td></tr>`).join('')}</tbody></table></div></div></div></div>`,
+                verifikator: (state) => `<div class="max-w-6xl mx-auto py-8 px-4"><header class="flex justify-between items-center mb-8"><div><h1 class="text-3xl font-bold text-gray-900">Dashboard Verifikator</h1><p class="text-gray-500">Selamat datang, ${state.currentUser.name}</p></div><div class="flex items-center space-x-4"><a href="#" data-action="back-to-role-selection" class="text-sm text-blue-600 hover:underline">Ganti Peran &rarr;</a><button data-action="logout" class="bg-red-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-600">Logout</button></div></header><div class="screen"><div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Menunggu Verifikasi</h3><p class="text-3xl font-bold text-yellow-600">${state.verifikator.verificationList.length}</p></div><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Diverifikasi Hari Ini</h3><p class="text-3xl font-bold text-green-600">25</p></div><div class="bg-white border p-5 rounded-xl"><h3 class="font-semibold text-gray-500">Ditolak Hari Ini</h3><p class="text-3xl font-bold text-red-600">2</p></div></div><div class="bg-white p-6 rounded-xl shadow-md"><h2 class="text-xl font-semibold mb-6">Daftar Aset untuk Diverifikasi</h2><div class="overflow-x-auto"><table class="w-full text-sm text-left"><thead class="text-xs text-gray-700 uppercase bg-gray-50"><tr><th class="px-6 py-3">ID Tag</th><th class="px-6 py-3">Deskripsi</th><th class="px-6 py-3">Batch</th><th class="px-6 py-3">Waktu Input</th><th class="px-6 py-3">Diinput Oleh</th><th class="px-6 py-3">Aksi</th></tr></thead><tbody>${state.verifikator.verificationList.map(item => `<tr><td class="px-6 py-4 font-medium text-gray-900">${item.id}</td><td class="px-6 py-4">${item.desc}</td><td class="px-6 py-4">${item.batch}</td><td class="px-6 py-4">${item.date}</td><td class="px-6 py-4">${item.submittedBy}</td><td class="px-6 py-4"><button data-action="review-item" data-id="${item.id}" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold">Periksa</button></td></tr>`).join('')}</tbody></table></div></div></div></div>`,
                 verifikatorDetail: (state) => {
                     const item = state.verifikator.currentItem;
                     if (!item) return `<div>Error: Item tidak ditemukan.</div>`;
@@ -695,8 +798,8 @@
                         if(!lokasi) return '<li>Tidak ada data</li>';
                         return Object.entries(lokasi).map(([nama, jumlah]) => `<li>${nama}: <strong>${jumlah}</strong></li>`).join('');
                     };
-                    // Perubahan: Menghapus max-w-6xl dan mx-auto
-                    return `<div class="py-8 px-4">
+
+                    return `<div class="max-w-6xl mx-auto py-8 px-4">
                         <div class="mb-6"><a href="#" data-action="back-to-list" class="text-blue-600">&larr; Kembali ke Daftar</a></div>
                         <div class="bg-white p-8 rounded-xl shadow-md">
                             <div class="flex justify-between items-start">
@@ -713,6 +816,7 @@
                                     <dl class="divide-y divide-gray-200">
                                         ${renderDetail('Material Code', item.materialCode || '-')}
                                         ${renderDetail('Uraian', item.desc)}
+                                        ${renderDetail('Kuantitas', `${item.details.kuantitas} ${item.details.satuan}`)}
                                         ${renderDetail('Klasifikasi', item.details.klasifikasi)}
                                         ${renderDetail('Kondisi', item.details.kondisi)}
                                         ${renderDetail('Lokasi Baru', item.details.lokasi)}
@@ -742,16 +846,16 @@
                                 <div class="lg:col-span-2">
                                      <h3 class="text-lg font-semibold mb-4 border-b pb-2">Foto Aset</h3>
                                      <div class="space-y-4">
-                                        ${item.photos.map(p => `<img src="${p}" alt="Foto Aset" class="w-full rounded-lg shadow-md">`).join('')}
+                                         ${item.photos.map(p => `<img src="${p}" alt="Foto Aset" class="w-full rounded-lg shadow-md">`).join('')}
                                      </div>
-                                      <div class="pt-6 mt-6 border-t">
-                                        <h3 class="text-lg font-semibold mb-3">Tindakan</h3>
-                                        <div id="rejection-reason-container" class="hidden mb-4">
-                                            <label for="rejection-reason" class="block text-sm font-medium mb-1">Alasan Penolakan (untuk Penelitian Ulang)</label>
-                                            <textarea id="rejection-reason" rows="3" class="w-full p-2 border rounded-lg" placeholder="Contoh: Foto tidak jelas, harap ambil ulang."></textarea>
-                                        </div>
-                                        <div class="flex space-x-4"><button data-action="approve-item" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg">Setujui</button><button data-action="reject-item" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg">Tolak (Penelitian Ulang)</button></div>
-                                    </div>
+                                     <div class="pt-6 mt-6 border-t">
+                                         <h3 class="text-lg font-semibold mb-3">Tindakan</h3>
+                                         <div id="rejection-reason-container" class="hidden mb-4">
+                                             <label for="rejection-reason" class="block text-sm font-medium mb-1">Alasan Penolakan (untuk Penelitian Ulang)</label>
+                                             <textarea id="rejection-reason" rows="3" class="w-full p-2 border rounded-lg" placeholder="Contoh: Foto tidak jelas, harap ambil ulang."></textarea>
+                                         </div>
+                                         <div class="flex space-x-4"><button data-action="approve-item" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg">Setujui</button><button data-action="reject-item" class="flex-1 bg-red-600 text-white font-bold py-3 rounded-lg">Tolak (Penelitian Ulang)</button></div>
+                                     </div>
                                 </div>
                             </div>
                         </div>
